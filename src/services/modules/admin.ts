@@ -1,4 +1,6 @@
 import request from '../request';
+import type { PageFilter } from '@/interfaces/PageFilter';
+import type { PageResult } from '@/interfaces/PageResult';
 
 export interface PostAdminLoginReq {
   username: string;
@@ -42,5 +44,54 @@ export interface GetAdminMineRes {
 export const getAdminMine = (): Promise<GetAdminMineRes> => {
   return request({
     url: '/api/v1/admins/mine',
+  });
+};
+
+type GetAdminReq = PageFilter;
+export interface GetAdminRes {
+  uuid: string;
+  username: string;
+  name: string;
+  job: string;
+  mobile: string;
+  casdoorUsername: string | null;
+  casdoorEmail: string | null;
+  casdoorAvatar: string | null;
+  casdoorRoles: string | null;
+  status: number;
+  updateTime: number;
+  createTime: number;
+}
+export const getAdmin = (opt?: GetAdminReq): Promise<PageResult<GetAdminRes>> => {
+  return request({
+    url: '/api/v1/admins',
+    params: opt,
+  });
+};
+
+export interface PostAdminReq {
+  name: string;
+  job: string;
+  mobile: string;
+  username: string;
+  password: string;
+  status: number;
+  casdoorUsername?: string;
+}
+export const postAdmin = (opt: PostAdminReq): Promise<void> => {
+  return request({
+    url: '/api/v1/admins',
+    method: 'POST',
+    data: opt,
+  });
+};
+
+// 后端 PATCH 支持可选 password（admin.service.ts 中 if (body.password) 分支），仅 username 不可改
+export type PatchAdminReq = Partial<Omit<PostAdminReq, 'username'>>;
+export const patchAdmin = (opt: PatchAdminReq, uuid: string): Promise<void> => {
+  return request({
+    url: `/api/v1/admins/${uuid}`,
+    method: 'PATCH',
+    data: opt,
   });
 };

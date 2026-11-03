@@ -1,0 +1,129 @@
+.product-heatmap {
+  &__limit {
+    margin: 0 8px 28px;
+
+    .ant-slider-track {
+      background-color: #ff4b4b;
+    }
+
+    .ant-slider-handle {
+      border-color: #ff4b4b;
+
+      &:focus,
+      &:hover {
+        border-color: #ff4b4b;
+        box-shadow: none;
+      }
+    }
+
+    .ant-slider:hover {
+      .ant-slider-track {
+        background-color: #ff4b4b;
+      }
+
+      .ant-slider-handle {
+        border-color: #ff4b4b;
+        box-shadow: none;
+      }
+    }
+  }
+
+  &__slider-wrap {
+    position: relative;
+  }
+
+  &__slider {
+    margin: 18px 0 30px;
+
+    .ant-slider-mark {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .ant-slider-mark-text {
+      color: #8c8c9e;
+      font-size: 14px;
+    }
+
+    &:hover .ant-slider-mark,
+    &:focus-within .ant-slider-mark {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+
+  &-tooltip {
+    overflow: visible !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+
+    .product-heatmap-tooltip__content {
+      position: relative;
+      padding: 6px 8px;
+      color: #8c8c9e;
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: nowrap;
+      background: #fff;
+      border: 1px solid #d9d9d9;
+
+      &::before,
+      &::after {
+        position: absolute;
+        top: 50%;
+        width: 0;
+        height: 0;
+        border-top: 7px solid transparent;
+        border-bottom: 7px solid transparent;
+        transform: translateY(-50%);
+        content: '';
+      }
+
+      &::before {
+        left: -8px;
+        border-right: 7px solid #d9d9d9;
+      }
+
+      &::after {
+        left: -6px;
+        border-right: 7px solid #fff;
+      }
+    }
+  }
+
+  &__slider-value {
+    position: absolute;
+    top: -23px;
+    z-index: 1;
+    color: #ff4b4b;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  &__slider .ant-slider-mark-text:first-child {
+    transform: translateX(0);
+  }
+
+  &__slider .ant-slider-mark-text:last-child {
+    transform: translateX(-100%);
+  }
+
+  &__slider .ant-slider-mark-text:only-child {
+    transform: translateX(-50%);
+  }
+
+  &__limit-label {
+    margin-bottom: 12px;
+    color: #595959;
+    font-size: 13px;
+  }
+
+  &__header {
+    padding: 4px 4px 0;
+  }
+}

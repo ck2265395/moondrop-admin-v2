@@ -47,7 +47,7 @@ export default function DashboardPage() {
         ))}
       </Row>
 
-      <Card className={styles.placeholderCard} bordered>
+      <Card className={styles.placeholderCard} variant="outlined">
         <FormattedMessage id="dashboard.placeholder" />
       </Card>
     </PageContainer>
