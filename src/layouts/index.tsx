@@ -61,6 +61,8 @@ const menuIconMap: Record<string, ReactNode> = {
   '/product': <AppstoreOutlined />,
   '/app-resource': <AppstoreAddOutlined />,
   '/headphone-model': <CustomerServiceOutlined />,
+  '/protocol': <FileProtectOutlined />,
+  '/image': <PictureOutlined />,
   '/announcement': <NotificationOutlined />,
   '/policy': <FileProtectOutlined />,
   '/protocol-v2': <FileProtectOutlined />,
