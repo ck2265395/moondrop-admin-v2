@@ -2,17 +2,41 @@ import ThemeSettings from '@/components/ThemeSettings';
 import { postAdminLogout } from '@/services/modules/admin';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
+  AppstoreAddOutlined,
   AppstoreOutlined,
+  AudioOutlined,
+  BlockOutlined,
+  CloudOutlined,
+  CloudSyncOutlined,
   CloudUploadOutlined,
+  CommentOutlined,
+  ControlOutlined,
+  CustomerServiceOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
+  FileMarkdownOutlined,
+  FileProtectOutlined,
+  FileSearchOutlined,
   LogoutOutlined,
+  LineChartOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  NotificationOutlined,
   PictureOutlined,
+  QuestionCircleOutlined,
   SettingOutlined,
   SlidersOutlined,
+  SmileOutlined,
+  SoundOutlined,
+  StarOutlined,
+  TagOutlined,
   TeamOutlined,
+  UsbOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { history, useIntl, useLocation, useModel, Outlet } from '@umijs/max';
-import { Button, Layout, Menu, message, Modal, Space } from 'antd';
+import { Avatar, Drawer, Dropdown, Grid, Layout, Menu, message, Modal, Space } from 'antd';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 
 interface MenuDataItem {
@@ -29,11 +53,53 @@ const hasMenuPath = (item: MenuDataItem, pathname: string): boolean =>
 const findFirstLeaf = (item: MenuDataItem): string =>
   item.routes?.length ? findFirstLeaf(item.routes[0]) : item.path;
 
+// 二级/三级菜单图标（收窄为图标栏时展示，对齐旧版 menuIconMap）
+const menuIconMap: Record<string, ReactNode> = {
+  '/app-upgrade': <CloudSyncOutlined />,
+  '/ota-config': <CloudOutlined />,
+  '/dongle-ota-config': <UsbOutlined />,
+  '/product': <AppstoreOutlined />,
+  '/app-resource': <AppstoreAddOutlined />,
+  '/headphone-model': <CustomerServiceOutlined />,
+  '/announcement': <NotificationOutlined />,
+  '/policy': <FileProtectOutlined />,
+  '/protocol-v2': <FileProtectOutlined />,
+  '/global-config': <SettingOutlined />,
+  '/promote-position': <PictureOutlined />,
+  '/promote': <PictureOutlined />,
+  '/wallpaper': <BlockOutlined />,
+  '/icon': <StarOutlined />,
+  '/profilepics': <SmileOutlined />,
+  '/asset-storage': <DatabaseOutlined />,
+  '/qa-category': <QuestionCircleOutlined />,
+  '/peq-config': <FileMarkdownOutlined />,
+  '/peq-config-tags': <TagOutlined />,
+  '/peq-config-comment': <CommentOutlined />,
+  '/microphone-adjust': <AudioOutlined />,
+  '/ref-response': <SlidersOutlined />,
+  '/freq-response': <LineChartOutlined />,
+  '/response-lib': <DatabaseOutlined />,
+  '/white-noise-audio': <SoundOutlined />,
+  '/huihifi': <SoundOutlined />,
+  '/admin': <UserOutlined />,
+  '/user-account': <TeamOutlined />,
+  '/userFeedback': <CommentOutlined />,
+  '/system-info': <DashboardOutlined />,
+  '/system-config': <ControlOutlined />,
+  '/operation-log': <FileSearchOutlined />,
+};
+
 export default function BasicLayout() {
   const intl = useIntl();
   const location = useLocation();
-  const { mode } = useTheme();
+  const { resolvedMode: mode } = useTheme();
   const { initialState, setInitialState } = useModel('@@initialState');
+
+  // 响应式：md 以下侧边栏收进顶栏汉堡按钮，以抽屉弹出
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // 路由守卫：未登录跳转登录页（/login 本身不走此布局）
   if (!initialState?.isLoggedIn) {
@@ -143,6 +209,10 @@ export default function BasicLayout() {
     hasMenuPath(item, location.pathname),
   );
 
+  const siderRoutes = activeTopItem?.routes ?? [];
+  const hasSider = siderRoutes.length > 0;
+  const siderWidth = siderCollapsed ? 64 : 180;
+
   const handleLogout = () => {
     Modal.confirm({
       title: intl.formatMessage({ id: 'logout.confirm' }),
@@ -160,6 +230,17 @@ export default function BasicLayout() {
     });
   };
 
+  const siderMenuItems = siderRoutes.map((item) => ({
+    key: item.path,
+    icon: menuIconMap[item.path],
+    label: item.name,
+    children: item.routes?.map((child) => ({
+      key: child.path,
+      icon: menuIconMap[child.path],
+      label: child.name,
+    })),
+  }));
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Layout.Header
@@ -175,7 +256,20 @@ export default function BasicLayout() {
           background: mode === 'dark' ? '#141414' : '#001529',
         }}
       >
-        <span style={{ color: '#fff', fontWeight: 600, marginRight: 24, whiteSpace: 'nowrap' }}>
+        {hasSider && isMobile ? (
+          <MenuUnfoldOutlined
+            onClick={() => setMobileMenuOpen(true)}
+            style={{ color: '#fff', fontSize: 18, marginRight: 12, cursor: 'pointer' }}
+          />
+        ) : null}
+        <span
+          style={{
+            color: '#fff',
+            fontWeight: 600,
+            marginRight: screens.md ? 24 : 12,
+            whiteSpace: 'nowrap',
+          }}
+        >
           {intl.formatMessage({ id: 'app.title' })}
         </span>
         <Menu
@@ -195,20 +289,50 @@ export default function BasicLayout() {
           }}
           style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
         />
-        <Space size={4} align="center" style={{ flexShrink: 0 }}>
+        <Space size={16} align="center" style={{ flexShrink: 0 }}>
           <ThemeSettings />
-          <Button
-            type="text"
-            icon={<LogoutOutlined />}
-            style={{ color: '#fff' }}
-            onClick={handleLogout}
-          />
+          <Dropdown
+            trigger={['hover']}
+            placement="bottom"
+            menu={{
+              items: [
+                {
+                  key: 'logout',
+                  icon: <LogoutOutlined />,
+                  label: intl.formatMessage({ id: 'logout.label' }),
+                  onClick: handleLogout,
+                },
+              ],
+            }}
+          >
+            <Space size={8} align="center" style={{ cursor: 'pointer', paddingRight: 8 }}>
+              <Avatar
+                size={32}
+                src={initialState?.avatar}
+                icon={<UserOutlined />}
+                style={{
+                  flexShrink: 0,
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                }}
+              />
+              {screens.md ? (
+                <span style={{ color: '#fff' }}>{initialState?.name}</span>
+              ) : null}
+            </Space>
+          </Dropdown>
         </Space>
       </Layout.Header>
       <Layout>
-        {activeTopItem?.routes?.length ? (
+        {hasSider && !isMobile ? (
           <Layout.Sider
             width={180}
+            collapsedWidth={64}
+            collapsed={siderCollapsed}
+            collapsible
+            trigger={null}
+            breakpoint="lg"
+            onBreakpoint={(broken) => setSiderCollapsed(broken)}
             theme={mode === 'dark' ? 'dark' : 'light'}
             style={{
               position: 'fixed',
@@ -220,27 +344,50 @@ export default function BasicLayout() {
             }}
           >
             <Menu
-              key={activeTopItem.path}
+              key={activeTopItem?.path}
               mode="inline"
               theme={mode === 'dark' ? 'dark' : 'light'}
+              inlineCollapsed={siderCollapsed}
               selectedKeys={[location.pathname]}
-              defaultOpenKeys={activeTopItem.routes
+              defaultOpenKeys={siderCollapsed ? [] : siderRoutes
                 .filter((item) => item.routes?.length)
                 .map((item) => item.path)}
-              items={activeTopItem.routes.map((item) => ({
-                key: item.path,
-                label: item.name,
-                children: item.routes?.map((child) => ({ key: child.path, label: child.name })),
-              }))}
+              items={siderMenuItems}
               onClick={({ key }) => history.push(key)}
               style={{ borderInlineEnd: 'none' }}
             />
           </Layout.Sider>
         ) : null}
+        {hasSider && isMobile ? (
+          <Drawer
+            placement="left"
+            width={260}
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            styles={{ body: { padding: 0 } }}
+            title={activeTopItem?.name}
+          >
+            <Menu
+              key={`drawer-${activeTopItem?.path}`}
+              mode="inline"
+              theme={mode === 'dark' ? 'dark' : 'light'}
+              selectedKeys={[location.pathname]}
+              defaultOpenKeys={siderRoutes
+                .filter((item) => item.routes?.length)
+                .map((item) => item.path)}
+              items={siderMenuItems}
+              onClick={({ key }) => {
+                history.push(key);
+                setMobileMenuOpen(false);
+              }}
+              style={{ borderInlineEnd: 'none' }}
+            />
+          </Drawer>
+        ) : null}
         <Layout.Content
           style={{
             marginTop: 56,
-            marginLeft: activeTopItem?.routes?.length ? 180 : 0,
+            marginLeft: hasSider && !isMobile ? siderWidth : 0,
             minHeight: 'calc(100vh - 56px)',
           }}
         >

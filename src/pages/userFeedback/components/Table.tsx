@@ -257,13 +257,15 @@ export default function UserFeedbackTable() {
             align: 'left',
             title: '左耳序列号',
             dataIndex: 'snLeft',
-            width: 120,
+            width: 90,
+            ellipsis: true,
           },
           {
             align: 'left',
             title: '右耳序列号',
             dataIndex: 'snRight',
-            width: 120,
+            width: 90,
+            ellipsis: true,
           },
           {
             align: 'center',
