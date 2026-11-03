@@ -1,0 +1,25 @@
+{
+  "name": "moondrop-admin-v2",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "max dev --port 11001",
+    "build": "max build",
+    "preview": "max preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "@ant-design/pro-components": "^2.8.10",
+    "@umijs/max": "^4.7.29",
+    "ahooks": "^3.9.5",
+    "antd": "^5.29.3",
+    "dayjs": "^1.11.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.9.3"
+  }
+}
