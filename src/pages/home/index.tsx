@@ -1,14 +1,20 @@
-import { PageContainer } from '@ant-design/pro-components';
 import { Card, Typography } from 'antd';
+import { useIntl, FormattedMessage } from '@umijs/max';
+import { PageContainer } from '@ant-design/pro-components';
 
 export default function HomePage() {
+  const intl = useIntl();
+
   return (
-    <PageContainer>
-      <Card>
-        <Typography.Title level={4}>Moondrop Admin V2</Typography.Title>
+    <PageContainer content={intl.formatMessage({ id: 'home.desc' })}>
+      <Card title={intl.formatMessage({ id: 'home.i18n.title' })} style={{ marginBottom: 16 }}>
         <Typography.Text type="secondary">
-          UmiJS Max 4 + antd 5 + Pro Components 2 脚手架已就绪。antd 5
-          支持运行时主题（theme.darkAlgorithm 可直接做暗色模式）。
+          <FormattedMessage id="home.i18n.desc" />
+        </Typography.Text>
+      </Card>
+      <Card title={intl.formatMessage({ id: 'home.theme.title' })}>
+        <Typography.Text type="secondary">
+          <FormattedMessage id="home.theme.desc" />
         </Typography.Text>
       </Card>
     </PageContainer>

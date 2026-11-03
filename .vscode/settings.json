@@ -1,0 +1,4 @@
+{
+  // 强制 IDE 使用项目内 TS 5.9（内置版本过旧，不认识 umi 生成的 moduleResolution: bundler）
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

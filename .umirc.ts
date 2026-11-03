@@ -1,17 +1,19 @@
-import { defineConfig } from '@umijs/max';
+import { defineConfig } from 'umi';
 
 export default defineConfig({
   antd: {},
   model: {},
   initialState: {},
   request: {},
-  layout: {
-    title: 'Moondrop Admin V2',
-    locale: false,
+  locale: {
+    default: 'zh-CN',
+    antd: true,
+    baseNavigator: true,
+    title: true,
   },
   routes: [
     { path: '/', redirect: '/home' },
-    { path: '/home', component: './home' },
+    { path: '/home', name: 'menu.home', component: './home' },
   ],
   proxy: {
     '/api': {
