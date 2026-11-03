@@ -5,6 +5,7 @@ export default defineConfig({
   model: {},
   initialState: {},
   request: {},
+  access: {},
   locale: {
     default: 'zh-CN',
     antd: true,
@@ -12,8 +13,9 @@ export default defineConfig({
     title: true,
   },
   routes: [
-    { path: '/', redirect: '/home' },
-    { path: '/home', name: 'menu.home', component: './home' },
+    { path: '/', redirect: '/dashboard' },
+    { path: '/login', name: 'login.title', layout: false, component: './login' },
+    { path: '/dashboard', name: 'menu.dashboard', component: './dashboard' },
   ],
   proxy: {
     '/api': {
