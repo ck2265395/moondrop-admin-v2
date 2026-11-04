@@ -15,6 +15,7 @@ export default defineConfig({
   routes: [
     { path: '/', redirect: '/dashboard' },
     { path: '/login', name: 'login.title', layout: false, component: './login' },
+    { path: '/casdoor-callback', layout: false, component: './casdoor-callback' },
     { path: '/dashboard', name: 'menu.dashboard', component: './dashboard' },
     { path: '/product-manage', redirect: '/product' },
     { path: '/product', name: 'menu.product', component: './product' },
@@ -62,7 +63,14 @@ export default defineConfig({
     },
   },
   npmClient: 'npm',
-  // 关闭 mfsu 依赖预打包：预打包会把 echarts-wordcloud 内部的 echarts/lib/echarts
-  // 解析成独立实例，导致 wordCloud 扩展注册到另一份 echarts 上（Unknown series wordCloud）
   mfsu: false,
+  define: {
+    ENV: {},
+    'ENV.title': 'MOONDROP',
+    'ENV.env': 'local',
+    'ENV.casdoorEndpoint': 'https://auth.mdrop.co',
+    'ENV.casdoorClientId': 'd374c2c5c4e4e419a0ed',
+    // 本地 v1 独立 dev server 端口；线上同域根路径时用 /（见 .umirc.prod*.ts）
+    'ENV.v1BaseUrl': 'http://localhost:11000',
+  },
 });

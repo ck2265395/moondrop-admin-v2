@@ -398,9 +398,11 @@ export default function BasicLayout() {
               size="small"
               icon={<SwapOutlined />}
               onClick={() => {
-                // 去掉 /new 前缀：/new/dashboard → /dashboard
-                const legacyPath = location.pathname.replace(/^\/new/, '') || '/';
-                window.location.href = legacyPath + location.search;
+                // 过滤 v1 没有的路径（dashboard / home），用 ENV.v1BaseUrl 兼容本地独立端口和线上同域
+                const LEGACY_UNKNOWN = ['/dashboard', '/home'];
+                const stripped = location.pathname.replace(/^\/new/, '') || '/';
+                const safePath = LEGACY_UNKNOWN.includes(stripped) ? '/' : stripped;
+                window.location.href = ENV.v1BaseUrl + safePath + location.search;
               }}
               style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }}
             >

@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "start": "cross-env PORT=11001 max dev",
     "dev": "cross-env PORT=11001 max dev",
-    "build": "max build",
-    "preview": "max preview"
+    "build": "max build && node scripts/write-build-commit.cjs",
+    "build:test": "cross-env UMI_ENV=test max build && node scripts/write-build-commit.cjs",
+    "build:prod": "cross-env UMI_ENV=prod max build && node scripts/write-build-commit.cjs",
+    "preview": "max preview",
+    "ts-check": "tsc --noEmit"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",

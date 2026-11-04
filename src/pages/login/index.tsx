@@ -3,7 +3,7 @@ import { postAdminLogin } from '@/services/modules/admin'
 import { getPublicConfig } from '@/services/modules/system-config'
 import { completeImgUrl } from '@/utils/utils'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
-import { history } from '@umijs/max'
+import { history, useModel } from '@umijs/max'
 import { useRequest } from 'ahooks'
 import { Button, Divider, Form, Input, message } from 'antd'
 import React from 'react'
@@ -230,6 +230,7 @@ const DEFAULT_SUBTITLE = '水月雨 · 听见理性的声音'
 
 export default function LoginPage() {
   const [form] = Form.useForm<PostAdminLoginReq>()
+  const { setInitialState } = useModel('@@initialState')
   const { data: publicConfig } = useRequest(getPublicConfig, {
     onError: () => {},
   })
@@ -238,13 +239,30 @@ export default function LoginPage() {
     onSuccess: (res) => {
       message.success('登录成功')
       localStorage.token = res.token
+      setInitialState({ isLoggedIn: true, name: '' })
       history.push('/')
     },
   })
 
-  // TODO: 后期接入 Casdoor SSO
+  // Casdoor SSO 登录
   const redirectToCasdoor = () => {
-    message.info('SSO 登录开发中')
+    const endpoint = (ENV.casdoorEndpoint as string) || ''
+    const clientId = (ENV.casdoorClientId as string) || ''
+    if (!endpoint || !clientId) {
+      message.info('SSO 登录暂未配置')
+      return
+    }
+    const state = Math.random().toString(36).slice(2, 10)
+    sessionStorage.setItem('casdoorState', state)
+    const redirectUri = `${window.location.origin}/new/casdoor-callback`
+    const authorizeUrl =
+      `${endpoint}/login/oauth/authorize` +
+      `?client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code` +
+      `&scope=openid email profile` +
+      `&state=${state}`
+    window.location.href = authorizeUrl
   }
 
   return (

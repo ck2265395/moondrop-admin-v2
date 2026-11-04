@@ -26,6 +26,20 @@ export const postAdminLogout = (): Promise<void> => {
   });
 };
 
+export interface PostAdminCasdoorLoginReq {
+  code: string;
+}
+export interface PostAdminCasdoorLoginRes {
+  token: string;
+}
+export const postAdminCasdoorLogin = (opt: PostAdminCasdoorLoginReq): Promise<PostAdminCasdoorLoginRes> => {
+  return request({
+    url: '/api/v1/admins/casdoor/login',
+    method: 'POST',
+    data: opt,
+  });
+};
+
 export interface GetAdminMineRes {
   uuid: string;
   status: 0 | 1;
