@@ -102,6 +102,7 @@ export interface DashboardFeedbackBrief {
   content: string
   status: string
   username: string
+  avatar: string | null
   productUuid: string | null
   productName: string | null
   publishTime: number
@@ -123,6 +124,15 @@ export interface DashboardApiToday {
   totalSlow: number
 }
 
+export interface DashboardReleaseBrief {
+  source: 'product' | 'ota' | 'dongle' | 'app'
+  title: string
+  version: string | null
+  publishTime: number
+  /** 状态：1=启用/正式发布，0=未启用/待发布 */
+  status: number
+}
+
 export interface DashboardOverview {
   user: DashboardUserStats
   productTotal: number
@@ -130,8 +140,10 @@ export interface DashboardOverview {
   feedback: {
     total: number
     pendingCount: number
+    todayNewCount: number
     recent: DashboardFeedbackBrief[]
   }
+  recentReleases: DashboardReleaseBrief[]
   operationLog: {
     recent: DashboardOperationLogBrief[]
   }

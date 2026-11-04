@@ -19,6 +19,7 @@ import {
   FileMarkdownOutlined,
   FileProtectOutlined,
   FileSearchOutlined,
+  HomeOutlined,
   LogoutOutlined,
   LineChartOutlined,
   MenuFoldOutlined,
@@ -134,17 +135,18 @@ export default function BasicLayout() {
 
   const { initialState, setInitialState } = useModel('@@initialState');
 
+  // 路由守卫：未登录跳转登录页（放在 effect 里避免 render 期间副作用）
+  useEffect(() => {
+    if (!initialState?.isLoggedIn && location.pathname !== '/login' && !location.pathname.startsWith('/casdoor-callback')) {
+      history.replace('/login');
+    }
+  }, [initialState?.isLoggedIn, location.pathname]);
+
   // 响应式：md 以下侧边栏收进顶栏汉堡按钮，以抽屉弹出
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // 路由守卫：未登录跳转登录页（/login 本身不走此布局）
-  if (!initialState?.isLoggedIn) {
-    history.push('/login');
-    return null;
-  }
 
   const route = {
     path: '/',
@@ -505,29 +507,39 @@ export default function BasicLayout() {
             flexDirection: 'column',
           }}
         >
-          {breadcrumbItems && location.pathname !== '/' ? (
+          {breadcrumbItems && location.pathname !== '/' && location.pathname !== '/dashboard' ? (
             <div
               style={{
-                padding: '16px 48px 0',
+                padding: '16px 48px 8px',
                 marginTop: 0,
-                background: mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
               }}
             >
               <Breadcrumb
-                items={breadcrumbItems.map((item, idx) => ({
-                  title: item.name,
-                  onClick: () => {
-                    if (idx < breadcrumbItems!.length - 1) {
-                      history.push(findFirstLeaf(item));
-                    }
+                style={{ fontSize: 14, fontWeight: 500 }}
+                items={[
+                  {
+                    title: (
+                      <HomeOutlined
+                        style={{ fontSize: 14, cursor: 'pointer', color: 'inherit' }}
+                      />
+                    ),
+                    onClick: () => history.push('/dashboard'),
                   },
-                }))}
+                  ...breadcrumbItems.map((item, idx) => ({
+                    title: item.name,
+                    onClick: () => {
+                      if (idx < breadcrumbItems!.length - 1) {
+                        history.push(findFirstLeaf(item));
+                      }
+                    },
+                  })),
+                ]}
               />
             </div>
           ) : null}
           <div
             style={{
-              marginTop: breadcrumbItems && location.pathname !== '/' ? 12 : 0,
+              marginTop: 0,
               flex: 1,
             }}
           >
