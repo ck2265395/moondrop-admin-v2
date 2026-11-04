@@ -1,5 +1,7 @@
 import type { PostAdminLoginReq } from '@/services/modules/admin'
 import { postAdminLogin } from '@/services/modules/admin'
+import { getPublicConfig } from '@/services/modules/system-config'
+import { completeImgUrl } from '@/utils/utils'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { history } from '@umijs/max'
 import { useRequest } from 'ahooks'
@@ -223,10 +225,14 @@ const VinylDisc: React.FC<{ style?: React.CSSProperties; color?: string }> = ({
 )
 
 // ===== 迁移适配 =====
-const BRAND_TITLE = 'MOONDROP 运营支撑系统'
+const DEFAULT_BRAND_TITLE = 'MOONDROP 运营支撑系统'
+const DEFAULT_SUBTITLE = '水月雨 · 听见理性的声音'
 
 export default function LoginPage() {
   const [form] = Form.useForm<PostAdminLoginReq>()
+  const { data: publicConfig } = useRequest(getPublicConfig, {
+    onError: () => {},
+  })
   const { loading: postAdminLoginLoading, run: postAdminLoginRun } = useRequest(postAdminLogin, {
     manual: true,
     onSuccess: (res) => {
@@ -543,7 +549,15 @@ export default function LoginPage() {
           {/* 顶部标题 */}
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <HeadphoneIcon size={26} color="#141414" />
+              {publicConfig?.['site.logo_light'] ? (
+                <img
+                  src={completeImgUrl(publicConfig['site.logo_light'])}
+                  alt={publicConfig?.['site.title'] || DEFAULT_BRAND_TITLE}
+                  style={{ height: 28 }}
+                />
+              ) : (
+                <HeadphoneIcon size={26} color="#141414" />
+              )}
               <span
                 style={{
                   fontSize: '22px',
@@ -555,20 +569,22 @@ export default function LoginPage() {
                   textOverflow: 'ellipsis',
                 }}
               >
-                {BRAND_TITLE}
+                {publicConfig?.['site.title'] || DEFAULT_BRAND_TITLE}
               </span>
             </div>
-            <div
-              style={{
-                fontSize: '12px',
-                color: '#9ca3af',
-                marginTop: '6px',
-                letterSpacing: '2px',
-                paddingLeft: '38px',
-              }}
-            >
-              水月雨 · 听见理性的声音
-            </div>
+            {publicConfig?.['site.subtitle'] !== '' ? (
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#9ca3af',
+                  marginTop: '6px',
+                  letterSpacing: '2px',
+                  paddingLeft: publicConfig?.['site.logo_light'] ? '0' : '38px',
+                }}
+              >
+                {publicConfig?.['site.subtitle'] || DEFAULT_SUBTITLE}
+              </div>
+            ) : null}
           </div>
 
           {/* 表单 */}

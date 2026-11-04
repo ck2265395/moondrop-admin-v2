@@ -38,8 +38,18 @@ export const patchSystemConfig = (key: string, value: string): Promise<void> =>
 /**
  * 皮肤/背景公开配置（无需鉴权，供登录页/Dashboard/Layout 读取背景图 URL）
  * 返回 Record<configKey, value>，空值代表用默认样式
+ * @deprecated 请使用 getPublicConfig()
  */
 export const getSkinConfig = (): Promise<Record<string, string>> =>
   request({
     url: '/api/v1/system-configs/skin',
+  });
+
+/**
+ * 公开配置（site + footer + skin），一次返回所有无需鉴权的品牌与视觉配置
+ * 供 Layout / 登录页 / 底部版权 / favicon 等动态读取
+ */
+export const getPublicConfig = (): Promise<Record<string, string>> =>
+  request({
+    url: '/api/v1/system-configs/public',
   });

@@ -80,7 +80,7 @@ const ConfigItemRow = ({
           value={item.value ? [item.value] : []}
           max={1}
           fileGroup="skin-img"
-          ext={['.jpg', '.jpeg', '.png', '.webp', '.gif']}
+          ext={['.jpg', '.jpeg', '.png', '.webp', '.gif', '.ico', '.svg']}
           onChange={(urls) => onChange(item.key, urls?.[0] ?? '')}
         />
         {item.value && (

@@ -1,5 +1,5 @@
 import ThemeSettings from '@/components/ThemeSettings';
-import { getSkinConfig } from '@/services/modules/system-config';
+import { getPublicConfig } from '@/services/modules/system-config';
 import { postAdminLogout } from '@/services/modules/admin';
 import { completeImgUrl } from '@/utils/utils';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -31,15 +31,16 @@ import {
   SmileOutlined,
   SoundOutlined,
   StarOutlined,
+  SwapOutlined,
   TagOutlined,
   TeamOutlined,
   UsbOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { history, useIntl, useLocation, useModel, Outlet } from '@umijs/max';
-import { Avatar, Breadcrumb, Drawer, Dropdown, Grid, Layout, Menu, message, Modal, Space } from 'antd';
+import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Menu, message, Modal, Space, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 interface MenuDataItem {
@@ -98,9 +99,39 @@ export default function BasicLayout() {
   const intl = useIntl();
   const location = useLocation();
   const { resolvedMode: mode } = useTheme();
-  const { data: skinConfig } = useRequest(getSkinConfig, {
+  const { data: publicConfig } = useRequest(getPublicConfig, {
     onError: () => {},
   });
+
+  // 动态 tab 标题 + favicon（site 配置生效）
+  useEffect(() => {
+    const siteTitle = publicConfig?.['site.title'] || 'MOONDROP 运营支撑系统';
+    document.title = siteTitle;
+
+    const favicon = publicConfig?.['site.favicon'];
+    if (favicon) {
+      const url = completeImgUrl(favicon);
+      const isIco = /\.ico(\?|$)/i.test(url);
+      // 优先更新已存在的 link（兼容 index.html 硬编码的 favicon.ico）
+      const selectors = isIco
+        ? ['link[rel="shortcut icon"]', 'link[rel="icon"]']
+        : ['link[rel="icon"]', 'link[rel="shortcut icon"]'];
+      let link: HTMLLinkElement | null = null;
+      for (const sel of selectors) {
+        link = document.querySelector(sel);
+        if (link) break;
+      }
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = isIco ? 'shortcut icon' : 'icon';
+        document.head.appendChild(link);
+      }
+      link.rel = isIco ? 'shortcut icon' : 'icon';
+      link.type = isIco ? 'image/x-icon' : link.type || '';
+      link.href = url;
+    }
+  }, [publicConfig]);
+
   const { initialState, setInitialState } = useModel('@@initialState');
 
   // 响应式：md 以下侧边栏收进顶栏汉堡按钮，以抽屉弹出
@@ -268,8 +299,8 @@ export default function BasicLayout() {
     })),
   }));
 
-  const headerBgUrl = skinConfig?.['skin.header_bg_image'];
-  const siderBgUrl = skinConfig?.['skin.sider_bg_image'];
+  const headerBgUrl = publicConfig?.['skin.header_bg_image'];
+  const siderBgUrl = publicConfig?.['skin.sider_bg_image'];
   // 从当前主题预设派生 Header 背景色，换预设时自动跟着变
   const { headerBgColor } = useTheme();
   const headerStyle: React.CSSProperties = {
@@ -327,7 +358,15 @@ export default function BasicLayout() {
             whiteSpace: 'nowrap',
           }}
         >
-          {intl.formatMessage({ id: 'app.title' })}
+          {publicConfig?.['site.logo'] ? (
+            <img
+              src={completeImgUrl(publicConfig['site.logo'])}
+              alt={publicConfig?.['site.title'] || 'MOONDROP'}
+              style={{ height: 28, verticalAlign: 'middle' }}
+            />
+          ) : (
+            publicConfig?.['site.title'] || intl.formatMessage({ id: 'app.title' })
+          )}
         </span>
         <Menu
           mode="horizontal"
@@ -354,6 +393,20 @@ export default function BasicLayout() {
           }}
         />
         <Space size={16} align="center" style={{ flexShrink: 0 }}>
+          <Tooltip title="切换到旧版">
+            <Button
+              size="small"
+              icon={<SwapOutlined />}
+              onClick={() => {
+                // 去掉 /new 前缀：/new/dashboard → /dashboard
+                const legacyPath = location.pathname.replace(/^\/new/, '') || '/';
+                window.location.href = legacyPath + location.search;
+              }}
+              style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }}
+            >
+              旧版
+            </Button>
+          </Tooltip>
           <ThemeSettings />
           <Dropdown
             trigger={['hover']}
@@ -446,6 +499,8 @@ export default function BasicLayout() {
             marginTop: 56,
             marginLeft: hasSider && !isMobile ? siderWidth : 0,
             minHeight: 'calc(100vh - 56px)',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           {breadcrumbItems && location.pathname !== '/' ? (
@@ -468,9 +523,46 @@ export default function BasicLayout() {
               />
             </div>
           ) : null}
-          <div style={{ marginTop: breadcrumbItems && location.pathname !== '/' ? 12 : 0 }}>
+          <div
+            style={{
+              marginTop: breadcrumbItems && location.pathname !== '/' ? 12 : 0,
+              flex: 1,
+            }}
+          >
             <Outlet />
           </div>
+          {/* Footer 版权区 */}
+          {(() => {
+            const company = publicConfig?.['footer.company'] || '';
+            const copyrightTpl =
+              publicConfig?.['footer.copyright'] || '© {year} {company}. All rights reserved.';
+            const copyrightText = copyrightTpl
+              .replace(/\{year\}/g, String(new Date().getFullYear()))
+              .replace(/\{company\}/g, company);
+            const icp = publicConfig?.['site.icp'] || '';
+            const customerService = publicConfig?.['footer.customer_service'] || '';
+            const lines = [copyrightText, icp, customerService].filter(Boolean);
+            if (!lines.length) return null;
+            return (
+              <div
+                style={{
+                  flexShrink: 0,
+                  textAlign: 'center',
+                  padding: '12px 24px',
+                  fontSize: 12,
+                  color: mode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)',
+                  borderTop:
+                    mode === 'dark'
+                      ? '1px solid rgba(255,255,255,0.06)'
+                      : '1px solid rgba(0,0,0,0.06)',
+                  background:
+                    mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                }}
+              >
+                {lines.join(' · ')}
+              </div>
+            );
+          })()}
         </Layout.Content>
       </Layout>
     </Layout>
