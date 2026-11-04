@@ -1,5 +1,7 @@
 import ThemeSettings from '@/components/ThemeSettings';
+import { getSkinConfig } from '@/services/modules/system-config';
 import { postAdminLogout } from '@/services/modules/admin';
+import { completeImgUrl } from '@/utils/utils';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
   AppstoreAddOutlined,
@@ -35,7 +37,8 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { history, useIntl, useLocation, useModel, Outlet } from '@umijs/max';
-import { Avatar, Drawer, Dropdown, Grid, Layout, Menu, message, Modal, Space } from 'antd';
+import { Avatar, Breadcrumb, Drawer, Dropdown, Grid, Layout, Menu, message, Modal, Space } from 'antd';
+import { useRequest } from 'ahooks';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
@@ -95,6 +98,9 @@ export default function BasicLayout() {
   const intl = useIntl();
   const location = useLocation();
   const { resolvedMode: mode } = useTheme();
+  const { data: skinConfig } = useRequest(getSkinConfig, {
+    onError: () => {},
+  });
   const { initialState, setInitialState } = useModel('@@initialState');
 
   // 响应式：md 以下侧边栏收进顶栏汉堡按钮，以抽屉弹出
@@ -122,9 +128,9 @@ export default function BasicLayout() {
         name: intl.formatMessage({ id: 'menu.productManage' }),
         icon: <AppstoreOutlined />,
         routes: [
+          { path: '/app-resource', name: intl.formatMessage({ id: 'menu.appResource' }) },
           { path: '/product', name: intl.formatMessage({ id: 'menu.product' }) },
           { path: '/headphone-model', name: intl.formatMessage({ id: 'menu.headphoneModel' }) },
-          { path: '/app-resource', name: intl.formatMessage({ id: 'menu.appResource' }) },
         ],
       },
       {
@@ -206,6 +212,25 @@ export default function BasicLayout() {
     ],
   };
 
+  // 根据当前 pathname 在菜单树里找完整祖先路径（不含根节点）
+  const findBreadcrumbPath = (
+    items: MenuDataItem[],
+    pathname: string,
+    trail: MenuDataItem[] = [],
+  ): MenuDataItem[] | null => {
+    for (const item of items) {
+      const nextTrail = [...trail, item];
+      if (item.path === pathname) return nextTrail;
+      if (item.routes?.length) {
+        const found = findBreadcrumbPath(item.routes, pathname, nextTrail);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const breadcrumbItems = findBreadcrumbPath(route.routes, location.pathname);
+
   // 当前所在的一级域（按菜单树祖先关系匹配，不依赖路径前缀）
   const activeTopItem = (route.routes as MenuDataItem[] | undefined)?.find((item) =>
     hasMenuPath(item, location.pathname),
@@ -243,21 +268,51 @@ export default function BasicLayout() {
     })),
   }));
 
+  const headerBgUrl = skinConfig?.['skin.header_bg_image'];
+  const siderBgUrl = skinConfig?.['skin.sider_bg_image'];
+  // 从当前主题预设派生 Header 背景色，换预设时自动跟着变
+  const { headerBgColor } = useTheme();
+  const headerStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 16px',
+    // 有图：半透明黑遮罩 + 背景图；无图：用预设的 headerBgColor 兜底
+    backgroundImage: headerBgUrl
+      ? `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${completeImgUrl(headerBgUrl)})`
+      : undefined,
+    backgroundSize: headerBgUrl ? 'cover' : undefined,
+    backgroundPosition: headerBgUrl ? 'center' : undefined,
+    backgroundRepeat: headerBgUrl ? 'no-repeat' : undefined,
+    backgroundColor: headerBgUrl ? undefined : headerBgColor,
+  };
+  const siderBaseBg = mode === 'dark' ? '#141414' : '#ffffff';
+  const siderStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 56,
+    bottom: 0,
+    left: 0,
+    overflow: 'auto',
+    paddingTop: 8,
+    // 有图：半透明黑遮罩 + 背景图；无图：默认白底/深色底
+    backgroundImage: siderBgUrl
+      ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${completeImgUrl(siderBgUrl)})`
+      : undefined,
+    backgroundSize: siderBgUrl ? 'cover' : undefined,
+    backgroundPosition: siderBgUrl ? 'center' : undefined,
+    backgroundRepeat: siderBgUrl ? 'no-repeat' : undefined,
+    backgroundColor: siderBgUrl ? undefined : siderBaseBg,
+    // 侧边栏与内容区的分隔线：浅色模式半透明灰，深色模式半透明白
+    borderRight: `1px solid ${mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Layout.Header
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 16px',
-          background: mode === 'dark' ? '#141414' : '#001529',
-        }}
-      >
+      <Layout.Header style={headerStyle}>
         {hasSider && isMobile ? (
           <MenuUnfoldOutlined
             onClick={() => setMobileMenuOpen(true)}
@@ -289,7 +344,14 @@ export default function BasicLayout() {
               history.push(findFirstLeaf(target));
             }
           }}
-          style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            borderBottom: 'none',
+            // antd dark Menu 默认带 #001529 背景色，盖在 Header 背景图上。
+            // 强制透明让 Header 的 linear-gradient + url() 透出来
+            background: 'transparent !important',
+          }}
         />
         <Space size={16} align="center" style={{ flexShrink: 0 }}>
           <ThemeSettings />
@@ -336,14 +398,7 @@ export default function BasicLayout() {
             breakpoint="lg"
             onBreakpoint={(broken) => setSiderCollapsed(broken)}
             theme={mode === 'dark' ? 'dark' : 'light'}
-            style={{
-              position: 'fixed',
-              top: 56,
-              bottom: 0,
-              left: 0,
-              overflow: 'auto',
-              paddingTop: 8,
-            }}
+            style={siderStyle}
           >
             <Menu
               key={activeTopItem?.path}
@@ -393,7 +448,29 @@ export default function BasicLayout() {
             minHeight: 'calc(100vh - 56px)',
           }}
         >
-          <Outlet />
+          {breadcrumbItems && location.pathname !== '/' ? (
+            <div
+              style={{
+                padding: '16px 48px 0',
+                marginTop: 0,
+                background: mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+              }}
+            >
+              <Breadcrumb
+                items={breadcrumbItems.map((item, idx) => ({
+                  title: item.name,
+                  onClick: () => {
+                    if (idx < breadcrumbItems!.length - 1) {
+                      history.push(findFirstLeaf(item));
+                    }
+                  },
+                }))}
+              />
+            </div>
+          ) : null}
+          <div style={{ marginTop: breadcrumbItems && location.pathname !== '/' ? 12 : 0 }}>
+            <Outlet />
+          </div>
         </Layout.Content>
       </Layout>
     </Layout>

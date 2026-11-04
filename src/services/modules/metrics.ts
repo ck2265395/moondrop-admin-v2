@@ -85,3 +85,62 @@ export const getMetricsSystemInfo = (): Promise<GetSystemInfoRes> =>
     method: 'GET',
     url: '/api/v1/admin/metrics/system-info',
   });
+
+// ========== Dashboard Overview ==========
+
+export interface DashboardUserStats {
+  total: number
+  todayNew: number
+  yesterdayNew: number
+  last7DaysNew: number
+  last30DaysNew: number
+  registrationTrend: { date: string; count: number }[]
+}
+
+export interface DashboardFeedbackBrief {
+  uuid: string
+  content: string
+  status: string
+  username: string
+  productUuid: string | null
+  productName: string | null
+  publishTime: number
+  reply: string
+}
+
+export interface DashboardOperationLogBrief {
+  uuid: string
+  adminUsername: string
+  module: string
+  action: string
+  summary: string
+  createTime: string
+}
+
+export interface DashboardApiToday {
+  total: number
+  totalErrors: number
+  totalSlow: number
+}
+
+export interface DashboardOverview {
+  user: DashboardUserStats
+  productTotal: number
+  peqConfigTotal: number
+  feedback: {
+    total: number
+    pendingCount: number
+    recent: DashboardFeedbackBrief[]
+  }
+  operationLog: {
+    recent: DashboardOperationLogBrief[]
+  }
+  apiToday: DashboardApiToday
+}
+
+/** 工作台概览（聚合：用户/产品/PEQ配置/反馈/操作日志/API 健康） */
+export const getMetricsOverview = (): Promise<DashboardOverview> =>
+  request({
+    method: 'GET',
+    url: '/api/v1/admin/metrics/overview',
+  });

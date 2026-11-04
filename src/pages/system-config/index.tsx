@@ -1,8 +1,10 @@
 import type { GetSystemConfigIndexRes } from '@/services/modules/system-config';
 import { getSystemConfigIndex, patchSystemConfig } from '@/services/modules/system-config';
+import FileUpload from '@/components/FileUpload';
+import { completeImgUrl } from '@/utils/utils';
 import { PageContainer } from '@ant-design/pro-components';
 import { useRequest } from 'ahooks';
-import { Card, Col, Input, InputNumber, message, Row, Spin, Switch, Typography } from 'antd';
+import { Card, Col, Image, Input, InputNumber, message, Row, Space, Spin, Switch, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 interface ConfigGroup {
@@ -63,6 +65,34 @@ const ConfigItemRow = ({
           if (value !== '' && value !== item.value) onChange(item.key, value);
         }}
       />
+    ) : item.type === 'image' ? (
+      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+        {item.value && (
+          <Image
+            src={completeImgUrl(item.value)}
+            width={120}
+            height={80}
+            style={{ objectFit: 'cover', borderRadius: 4, border: '1px solid #f0f0f0' }}
+            preview
+          />
+        )}
+        <FileUpload
+          value={item.value ? [item.value] : []}
+          max={1}
+          fileGroup="skin-img"
+          ext={['.jpg', '.jpeg', '.png', '.webp', '.gif']}
+          onChange={(urls) => onChange(item.key, urls?.[0] ?? '')}
+        />
+        {item.value && (
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 12, cursor: 'pointer' }}
+            onClick={() => onChange(item.key, '')}
+          >
+            清除图片
+          </Typography.Text>
+        )}
+      </Space>
     ) : (
       <Input
         size="small"
@@ -114,9 +144,9 @@ export default () => {
     <PageContainer>
       <Spin spinning={loading}>
         {groups.length ? (
-          <Row gutter={[12, 12]}>
+          <Row gutter={[16, 16]}>
             {groups.map((group) => (
-              <Col key={group.key} xs={24} sm={12} md={12} lg={12}>
+              <Col key={group.key} xs={24} sm={24} md={12} lg={8} xl={6}>
                 <Card
                   size="small"
                   title={group.label}

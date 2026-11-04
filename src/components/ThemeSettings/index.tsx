@@ -1,4 +1,4 @@
-import { COLOR_PRESETS, useTheme } from '@/theme/ThemeProvider';
+import { COLOR_PRESETS, THEME_PRESETS, useTheme } from '@/theme/ThemeProvider';
 import {
   BgColorsOutlined,
   CheckOutlined,
@@ -9,7 +9,7 @@ import {
   SunOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
-import { Button, ColorPicker, Drawer, Dropdown, Grid, Slider, Switch, Tooltip } from 'antd';
+import { Button, ColorPicker, Drawer, Dropdown, Grid, Slider, Space, Switch, Tooltip } from 'antd';
 import { useIntl } from '@umijs/max';
 import type { MenuProps } from 'antd';
 import { useEffect, useState } from 'react';
@@ -28,10 +28,12 @@ export default function ThemeSettings() {
     compact,
     colorPrimary,
     borderRadius,
+    themePresetId,
     setMode,
     setCompact,
     setColorPrimary,
     setBorderRadius,
+    applyPreset,
   } = useTheme();
   const [editorOpen, setEditorOpen] = useState(false);
   const [locale, setLocaleState] = useState<string>(() => {
@@ -143,6 +145,59 @@ export default function ThemeSettings() {
     handleThemeKey(key);
   };
 
+  const renderPresetCards = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ fontSize: 13, opacity: 0.65 }}>
+        {intl.formatMessage({ id: 'settings.presets' })}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        {THEME_PRESETS.map((preset) => {
+          const active = preset.id === themePresetId;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => applyPreset(preset.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 8,
+                border: `1.5px solid ${active ? colorPrimary : '#e5e7eb'}`,
+                background: preset.colorBgLayout ?? '#ffffff',
+                cursor: 'pointer',
+                transition: 'border-color 0.2s',
+              }}
+            >
+              <span
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: preset.colorPrimary,
+                  flexShrink: 0,
+                  boxShadow: '0 0 0 2px rgba(0,0,0,0.06)',
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 13,
+                  color: '#1f2937',
+                  flex: 1,
+                  textAlign: 'left',
+                }}
+              >
+                {intl.formatMessage({ id: preset.nameKey })}
+              </span>
+              {active && <CheckOutlined style={{ color: colorPrimary, fontSize: 12 }} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const renderEditorDrawer = () => (
     <Drawer
       title={intl.formatMessage({ id: 'settings.themeEditor' })}
@@ -154,8 +209,7 @@ export default function ThemeSettings() {
         <Button
           block
           onClick={() => {
-            setColorPrimary(COLOR_PRESETS[0]);
-            setBorderRadius(6);
+            applyPreset('classic');
             setCompact(false);
             setMode('auto');
           }}
@@ -165,6 +219,7 @@ export default function ThemeSettings() {
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {renderPresetCards()}
         <div>
           <div style={{ marginBottom: 8 }}>{intl.formatMessage({ id: 'settings.color' })}</div>
           <ColorPicker
@@ -191,7 +246,10 @@ export default function ThemeSettings() {
           />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{intl.formatMessage({ id: 'settings.compact' })}</span>
+          <Space>
+            <DesktopOutlined />
+            <span>{intl.formatMessage({ id: 'settings.compact' })}</span>
+          </Space>
           <Switch checked={compact} onChange={(checked) => setCompact(checked)} />
         </div>
       </div>

@@ -1,3 +1,15 @@
 body {
   margin: 0;
 }
+
+// Header 背景图启用时，顶栏 horizontal Menu 默认带的 #001529 背景
+// 会盖掉 Header 的 background-image，强制透明让背景图透出来
+.ant-layout-header > .ant-menu-horizontal {
+  background: transparent !important;
+}
+
+// Sider 背景图启用时，inline Menu 默认深色背景也会盖掉
+.ant-layout-sider > .ant-menu-inline,
+.ant-layout-sider-children > .ant-menu-inline {
+  background: transparent !important;
+}
