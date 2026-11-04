@@ -288,7 +288,11 @@ export default function DashboardPage() {
                           <span className={styles.feedTime}>{fmtRelative(f.publishTime)}</span>
                         </Tooltip>
                       </div>
-                      <div className={styles.feedContent}>{f.content || '（无内容）'}</div>
+                      <div className={styles.feedContent}>
+                        <div className={styles.feedContentInner}>
+                          {f.content || '（无内容）'}
+                        </div>
+                      </div>
                     </div>
                   </li>
                 ))}
