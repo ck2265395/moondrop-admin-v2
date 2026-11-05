@@ -404,7 +404,9 @@ export default function BasicLayout() {
                 const LEGACY_UNKNOWN = ['/dashboard', '/home'];
                 const stripped = location.pathname.replace(/^\/new/, '') || '/';
                 const safePath = LEGACY_UNKNOWN.includes(stripped) ? '/' : stripped;
-                window.location.href = ENV.v1BaseUrl + safePath + location.search;
+                // 去掉末尾斜杠，避免 //xxx 被浏览器解析为协议相对 URL（https://xxx）
+                const base = ENV.v1BaseUrl.replace(/\/$/, '');
+                window.location.href = base + safePath + location.search;
               }}
               style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' }}
             >

@@ -254,7 +254,9 @@ export default function LoginPage() {
     }
     const state = Math.random().toString(36).slice(2, 10)
     sessionStorage.setItem('casdoorState', state)
-    const redirectUri = `${window.location.origin}/new/casdoor-callback`
+    // 用 history.createHref 自动处理 base 路径（dev 为空，prod 为 /new/）
+    const redirectPath = history.createHref({ pathname: '/casdoor-callback' })
+    const redirectUri = `${window.location.origin}${redirectPath}`
     const authorizeUrl =
       `${endpoint}/login/oauth/authorize` +
       `?client_id=${clientId}` +
