@@ -351,6 +351,7 @@ export default (props: Props) => {
       layout="vertical"
       initialValues={{
         isDongleUpgradable: false,
+        retrieveSkuViaSn: true,
         variants: [createEmptyVariant('1', true)],
       }}
       onVisibleChange={(val) => {
@@ -368,6 +369,7 @@ export default (props: Props) => {
               isDacAmp: data.isDacAmp,
               isDongleUpgradable: data.isDongleUpgradable,
               dongleUpgradeTypes: data.dongleUpgradeTypes ?? [],
+              retrieveSkuViaSn: data.retrieveSkuViaSn,
               languageType: data.languageType,
               eqBands: data.eqBands,
               gainRange: data.gainRange,
@@ -458,6 +460,13 @@ export default (props: Props) => {
         label="是否解码耳放"
         checkedChildren="是"
         unCheckedChildren="否"
+      />
+      <ProFormSwitch
+        fieldProps={{ style: { maxWidth: '100%' } }}
+        name="retrieveSkuViaSn"
+        label="通过SN码获取SKU值"
+        checkedChildren="启用"
+        unCheckedChildren="禁用"
       />
       <ProFormSwitch
         fieldProps={{ style: { maxWidth: '100%' } }}

@@ -73,6 +73,7 @@ export interface GetProductListRes {
   isDacAmp: boolean;
   isDongleUpgradable: boolean;
   dongleUpgradeTypes?: string[];
+  retrieveSkuViaSn: boolean;
   createTime: number;
   updateTime: number;
   variants?: ProductSkuItem[];
@@ -133,6 +134,7 @@ export interface PostProductReq {
   isDacAmp?: boolean;
   isDongleUpgradable?: boolean;
   dongleUpgradeTypes?: string[];
+  retrieveSkuViaSn?: boolean;
   variants?: ProductSkuItem[];
 }
 export const postProduct = (opt: PostProductReq): Promise<void> => {

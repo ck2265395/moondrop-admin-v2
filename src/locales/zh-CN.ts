@@ -18,6 +18,7 @@ export default {
   'menu.freqResponse': '频响曲线',
   'menu.responseLib': '频响库',
   'menu.whiteNoiseAudio': '白噪音音频',
+  'menu.virtualSoundCard': '虚拟声卡数据',
   'menu.huihifi': 'HuiHiFi',
   'menu.content': '内容运营',
   'menu.protocol': '协议公告',

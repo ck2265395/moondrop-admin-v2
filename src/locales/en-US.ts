@@ -18,6 +18,7 @@ export default {
   'menu.freqResponse': 'Frequency Response',
   'menu.responseLib': 'Response Library',
   'menu.whiteNoiseAudio': 'White Noise Audio',
+  'menu.virtualSoundCard': 'Virtual Sound Card',
   'menu.huihifi': 'HuiHiFi',
   'menu.content': 'Content',
   'menu.protocol': 'Protocols',

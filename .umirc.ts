@@ -34,6 +34,7 @@ export default defineConfig({
     { path: '/freq-response', name: 'menu.freqResponse', component: './freq-response' },
     { path: '/response-lib', name: 'menu.responseLib', component: './response-lib' },
     { path: '/white-noise-audio', name: 'menu.whiteNoiseAudio', component: './white-noise-audio' },
+    { path: '/virtual-sound-card', name: 'menu.virtualSoundCard', component: './virtual-sound-card' },
     { path: '/huihifi', name: 'menu.huihifi', component: './huihifi' },
     { path: '/content', redirect: '/announcement' },
     { path: '/announcement', name: 'menu.announcement', component: './announcement' },
