@@ -12,7 +12,7 @@ import {
   postRefResponse,
   RefType,
 } from '@/services/modules/ref-response';
-import { pageToTable, renderFileLink, renderIndex, tablePagination } from '@/utils/table';
+import { pageToTable, renderFileDownload, renderIndex, tablePagination } from '@/utils/table';
 import { DrawerForm, PageContainer, ProFormSelect, ProFormSwitch, ProFormText, ProTable } from '@ant-design/pro-components';
 import type { ActionType } from '@ant-design/pro-components';
 import { useRequest } from 'ahooks';
@@ -178,7 +178,7 @@ export default () => {
             title: '文件',
             dataIndex: 'file',
             search: false,
-            render: (_, record) => renderFileLink(record.file),
+            render: (_, record) => renderFileDownload(record.file),
           },
           {
             align: 'center',

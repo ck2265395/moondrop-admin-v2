@@ -15,7 +15,7 @@ import {
 } from '@/services/modules/white-noise-audio';
 import {
   pageToTable,
-  renderFileLink,
+  renderFileDownload,
   renderIndex,
   renderThumb,
   tablePagination,
@@ -283,7 +283,7 @@ export default () => {
             title: '音频',
             dataIndex: 'file',
             search: false,
-            render: (_, record) => renderFileLink(record.file),
+            render: (_, record) => renderFileDownload(record.file),
           },
           {
             align: 'center',

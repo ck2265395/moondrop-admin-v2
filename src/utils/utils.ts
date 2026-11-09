@@ -12,6 +12,28 @@ export const getProductModelName = (model: string, name?: string) => {
   return `${model}`;
 };
 
+/**
+ * 下载远程文件：跨域 CDN 上的 txt 等可预览文件，浏览器会忽略 a 标签的 download 属性直接打开预览，
+ * 所以先 fetch 转 blob 再用本地 objectURL 触发下载；fetch 失败（如 CDN 未配 CORS）时降级为新标签打开
+ */
+export const downloadFile = async (url: string, filename?: string) => {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename || decodeURIComponent(url.split('/').pop() || 'download');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    window.open(url, '_blank');
+  }
+};
+
 export const flat2Tree = <T>(
   arr: T[],
   options?: {

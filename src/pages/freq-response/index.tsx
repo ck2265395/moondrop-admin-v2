@@ -11,7 +11,7 @@ import {
   patchFreqResponseAdmin,
   postFreqResponseAdmin,
 } from '@/services/modules/freq-response-admin';
-import { pageToTable, renderIndex, tablePagination } from '@/utils/table';
+import { pageToTable, renderFileDownload, renderIndex, tablePagination } from '@/utils/table';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -197,6 +197,7 @@ export default () => {
             dataIndex: 'file',
             ellipsis: true,
             search: false,
+            render: (_, record) => renderFileDownload(record.file),
           },
           {
             align: 'center',

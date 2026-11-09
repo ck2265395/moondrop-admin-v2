@@ -8,7 +8,7 @@ import {
   postResponseLib,
 } from '@/services/modules/response-lib';
 import { getResponseLibTagsAll, postResponseLibTags } from '@/services/modules/response-lib-tags';
-import { listToTable, renderFileLink, renderIndex } from '@/utils/table';
+import { listToTable, renderFileDownload, renderIndex } from '@/utils/table';
 import { DrawerForm, PageContainer, ProFormSelect, ProFormText, ProTable } from '@ant-design/pro-components';
 import type { ActionType } from '@ant-design/pro-components';
 import { useRequest } from 'ahooks';
@@ -174,12 +174,13 @@ export default () => {
             align: 'left',
             title: '文件',
             dataIndex: 'file',
-            render: (_, record) => renderFileLink(record.file),
+            render: (_, record) => renderFileDownload(record.file),
           },
           {
             align: 'left',
             title: '标签',
             dataIndex: 'tags',
+            width: 200,
             render: (_, record) => record.tags?.map((tag) => <Tag key={tag}>{tag}</Tag>),
           },
           {

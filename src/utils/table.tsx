@@ -1,15 +1,16 @@
 import type { PageResult } from '@/interfaces/PageResult';
-import { completeImgUrl } from '@/utils/utils';
+import { completeImgUrl, downloadFile } from '@/utils/utils';
 import {
+  CustomerServiceOutlined,
   FileExcelOutlined,
-  FileImageOutlined,
   FileOutlined,
   FilePdfOutlined,
   FileTextOutlined,
   FileUnknownOutlined,
   FileZipOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons';
-import { Image, Typography } from 'antd';
+import { Image, Tooltip, Typography } from 'antd';
 
 export const tablePagination = {
   showSizeChanger: true,
@@ -40,6 +41,18 @@ export const renderFileLink = (value?: string) => {
     <Typography.Link href={url} target="_blank" rel="noreferrer" ellipsis>
       {value}
     </Typography.Link>
+  );
+};
+
+/** 文件下载：展示对应类型的文件图标，点击以 blob 方式下载（避免 txt 等类型在浏览器直接预览） */
+export const renderFileDownload = (value?: string) => {
+  if (!value) {
+    return '--';
+  }
+  return (
+    <Tooltip title={`下载：${value}`}>
+      <a onClick={() => downloadFile(completeImgUrl(value))}>{renderFileIcon(value, 24)}</a>
+    </Tooltip>
   );
 };
 
@@ -98,9 +111,9 @@ export function renderFileIcon(fileNameOrKey?: string, size = 48) {
     );
   }
   if (VIDEO_EXTS.includes(ext))
-    return <FileImageOutlined style={{ fontSize: size, color: '#1677ff' }} />;
+    return <VideoCameraOutlined style={{ fontSize: size, color: '#1677ff' }} />;
   if (AUDIO_EXTS.includes(ext))
-    return <FileImageOutlined style={{ fontSize: size, color: '#722ed1' }} />;
+    return <CustomerServiceOutlined style={{ fontSize: size, color: '#722ed1' }} />;
   if (ZIP_EXTS.includes(ext))
     return <FileZipOutlined style={{ fontSize: size, color: '#fa8c16' }} />;
   if (CODE_EXTS.includes(ext))
