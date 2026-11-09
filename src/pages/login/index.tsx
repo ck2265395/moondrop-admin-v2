@@ -230,7 +230,6 @@ const DEFAULT_SUBTITLE = '水月雨 · 听见理性的声音'
 
 export default function LoginPage() {
   const [form] = Form.useForm<PostAdminLoginReq>()
-  const { setInitialState } = useModel('@@initialState')
   const { data: publicConfig } = useRequest(getPublicConfig, {
     onError: () => {},
   })
@@ -239,8 +238,10 @@ export default function LoginPage() {
     onSuccess: (res) => {
       message.success('登录成功')
       localStorage.token = res.token
-      setInitialState({ isLoggedIn: true, name: '' })
-      history.push('/')
+      // 整页跳转：setInitialState 与 history.push 的 state 提交不在同一 commit，
+      // 守卫 effect 会读到旧登录态把页面踢回 /login；刷新后 getInitialState
+      // 用新 token 拉取完整管理员信息（用户名、头像）
+      window.location.href = '/'
     },
   })
 
@@ -382,7 +383,7 @@ export default function LoginPage() {
 
       <div
         style={{
-          minHeight: '100%',
+          minHeight: '100vh',
           width: '100%',
           position: 'relative',
           overflow: 'hidden',

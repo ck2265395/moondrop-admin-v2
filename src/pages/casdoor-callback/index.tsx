@@ -3,17 +3,16 @@ import { history } from '@umijs/max'
 import { useRequest } from 'ahooks'
 import { Spin, message } from 'antd'
 import { useEffect, useRef } from 'react'
-import { useModel } from '@umijs/max'
 
 export default () => {
   const hasRunRef = useRef(false)
-  const { setInitialState } = useModel('@@initialState')
   const { run: casdoorLoginRun } = useRequest(postAdminCasdoorLogin, {
     manual: true,
     onSuccess: (res) => {
       localStorage.token = res.token
-      setInitialState({ isLoggedIn: true, name: '' })
-      history.replace('/')
+      // 整页跳转：setInitialState 与路由守卫的 state 提存在时序竞争，
+      // 会被守卫踢回 /login；刷新后 getInitialState 用新 token 拉取完整信息
+      window.location.href = '/'
     },
     onError: () => {
       history.replace('/login')
