@@ -1,5 +1,5 @@
 import type { GetOperationLogReq, GetOperationLogRes } from '@/services/modules/operation-log';
-import { getOperationLogModules, getOperationLogs } from '@/services/modules/operation-log';
+import { getOperationLogAdmins, getOperationLogModules, getOperationLogs } from '@/services/modules/operation-log';
 import { completeImgUrl } from '@/utils/utils';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useRequest } from 'ahooks';
@@ -411,6 +411,7 @@ const ACTION_COLOR: Record<string, string> = {
 
 export default () => {
   const { data: modules } = useRequest(getOperationLogModules);
+  const { data: admins } = useRequest(getOperationLogAdmins);
 
   return (
     <PageContainer title="操作日志">
@@ -447,6 +448,10 @@ export default () => {
             title: '管理员',
             dataIndex: 'adminUsername',
             width: 160,
+            valueType: 'select',
+            fieldProps: { showSearch: true },
+            valueEnum: Object.fromEntries((admins || []).map((a) => [a, { text: a }])),
+            order: 70,
           },
           {
             align: 'center',
@@ -455,6 +460,7 @@ export default () => {
             width: 140,
             valueEnum: Object.fromEntries((modules || []).map((m) => [m, { text: moduleText(m) }])),
             render: (_, record) => moduleText(record.module),
+            order: 90,
           },
           {
             align: 'center',
@@ -462,6 +468,7 @@ export default () => {
             dataIndex: 'action',
             width: 100,
             valueEnum: ACTION_ENUM,
+            order: 80,
             render: (_, record) => (
               <Tag color={ACTION_COLOR[record.action] || 'default'}>
                 {ACTION_ENUM[record.action as keyof typeof ACTION_ENUM]?.text || record.action}
@@ -472,6 +479,7 @@ export default () => {
             title: '操作内容',
             dataIndex: 'summary',
             width: 560,
+            order: 100,
             onCell: () => ({ style: { verticalAlign: 'top' } }),
             render: (_, record) => <SummaryCell summary={record.summary} />,
           },

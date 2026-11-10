@@ -37,3 +37,9 @@ export const getOperationLogModules = (): Promise<string[]> => {
     url: '/api/v1/admin/operation-logs/modules',
   });
 };
+
+export const getOperationLogAdmins = (): Promise<string[]> => {
+  return request({
+    url: '/api/v1/admin/operation-logs/admins',
+  });
+};
