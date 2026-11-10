@@ -114,6 +114,158 @@ interface SummaryField {
   value: string;
 }
 
+/** 「旧值 → 新值」对比分隔符（与后端操作日志 update 约定一致） */
+const DIFF_ARROW = ' → ';
+
+/** 只对这些字段标签的「旧值 → 新值」做 diff 标红，其余标签保持原渲染 */
+const DIFF_LABELS = new Set(['功能配置', '权限', '标签', '名称', '版本号']);
+
+/** 空值占位（后端 formatLogValue 约定）或空字符串，任一侧为空则不做 diff */
+const isDiffEmpty = (text: string) => !text || text === '空' || text === '无' || text === '(空)';
+
+/** 值里包含链接/图片/文档路径时不做 diff，保持原链接渲染 */
+const LINK_LIKE_PATTERN = new RegExp(
+  `(?:${IMAGE_URL_PATTERN.source}|${HTTP_URL_PATTERN.source}|${CDN_PATH_PATTERN.source})`,
+  'i',
+);
+
+interface DiffPart {
+  text: string;
+  changed: boolean;
+}
+
+/** LCS diff：返回两侧按序标记的片段，changed=true 表示仅存在于本侧 */
+const lcsDiffParts = (a: string[], b: string[]): [DiffPart[], DiffPart[]] => {
+  const n = a.length;
+  const m = b.length;
+  const dp: Uint32Array[] = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const partsA: DiffPart[] = [];
+  const partsB: DiffPart[] = [];
+  const push = (parts: DiffPart[], text: string, changed: boolean) => {
+    const last = parts[parts.length - 1];
+    if (last && last.changed === changed) {
+      last.text += text;
+    } else {
+      parts.push({ text, changed });
+    }
+  };
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) {
+      push(partsA, a[i], false);
+      push(partsB, b[j], false);
+      i += 1;
+      j += 1;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      push(partsA, a[i], true);
+      i += 1;
+    } else {
+      push(partsB, b[j], true);
+      j += 1;
+    }
+  }
+  while (i < n) {
+    push(partsA, a[i], true);
+    i += 1;
+  }
+  while (j < m) {
+    push(partsB, b[j], true);
+    j += 1;
+  }
+  return [partsA, partsB];
+};
+
+const DIFF_CHANGED_OLD_STYLE: React.CSSProperties = {
+  color: '#bfbfbf',
+  textDecoration: 'line-through',
+  textDecorationColor: '#ff7875',
+};
+
+const DIFF_CHANGED_NEW_STYLE: React.CSSProperties = {
+  color: '#389e0d',
+  fontWeight: 600,
+};
+
+const renderDiffParts = (parts: DiffPart[], changedStyle: React.CSSProperties) =>
+  parts.map((part, index) =>
+    part.changed ? (
+      <span key={index} style={changedStyle}>
+        {part.text}
+      </span>
+    ) : (
+      <span key={index}>{part.text}</span>
+    ),
+  );
+
+/** 「旧值 → 新值」对比渲染：差异部分标红（旧值加删除线），其余值原样渲染 */
+const renderDiffValue = (value: string, label?: string) => {
+  if (label && !DIFF_LABELS.has(label)) {
+    return renderLinkedText(value);
+  }
+  const arrowIndex = value.indexOf(DIFF_ARROW);
+  if (arrowIndex <= 0 || arrowIndex + DIFF_ARROW.length >= value.length) {
+    return renderLinkedText(value);
+  }
+  const oldText = value.slice(0, arrowIndex);
+  const newText = value.slice(arrowIndex + DIFF_ARROW.length);
+  // 任一侧为空不比较；链接/图片保持可点击渲染；超长文本跳过 diff 避免 O(n²) 开销
+  if (
+    isDiffEmpty(oldText) ||
+    isDiffEmpty(newText) ||
+    LINK_LIKE_PATTERN.test(oldText) ||
+    LINK_LIKE_PATTERN.test(newText) ||
+    oldText.length > 600 ||
+    newText.length > 600
+  ) {
+    return renderLinkedText(value);
+  }
+
+  // 列表类值（逗号/顿号分隔）按集合对比：项在另一侧不存在即标记增删，与顺序无关
+  const separatorPattern = /[,，、]/;
+  if (separatorPattern.test(oldText) || separatorPattern.test(newText)) {
+    const splitItems = (text: string) =>
+      text.split(/[,，、]/).map((item) => item.trim()).filter(Boolean);
+    const oldItems = splitItems(oldText);
+    const newItems = splitItems(newText);
+    const newSet = new Set(newItems);
+    const oldSet = new Set(oldItems);
+    const renderListSide = (items: string[], other: Set<string>, changedStyle: React.CSSProperties) =>
+      items.map((item, index) => (
+        <span key={index}>
+          {index > 0 ? <span style={{ color: '#8c8c8c' }}>,</span> : null}
+          {other.has(item) ? (
+            <span>{item}</span>
+          ) : (
+            <span style={changedStyle}>{item}</span>
+          )}
+        </span>
+      ));
+    return (
+      <span>
+        {renderListSide(oldItems, newSet, DIFF_CHANGED_OLD_STYLE)}
+        <span style={{ color: '#8c8c8c', margin: '0 4px' }}>→</span>
+        {renderListSide(newItems, oldSet, DIFF_CHANGED_NEW_STYLE)}
+      </span>
+    );
+  }
+
+  // 普通单值逐字符对比
+  const [partsOld, partsNew] = lcsDiffParts(Array.from(oldText), Array.from(newText));
+  return (
+    <span>
+      {renderDiffParts(partsOld, DIFF_CHANGED_OLD_STYLE)}
+      <span style={{ color: '#8c8c8c', margin: '0 4px' }}>→</span>
+      {renderDiffParts(partsNew, DIFF_CHANGED_NEW_STYLE)}
+    </span>
+  );
+};
+
 /** 清洗 IP 展示：去掉 IPv4-mapped IPv6 等前缀，本地回环地址不显示 */
 const formatIp = (ip?: string): string => {
   const value = (ip ?? '').trim();
@@ -265,7 +417,7 @@ const renderFieldRow = (field: SummaryField, key?: string) => {
         </span>
       ) : null}
       <span style={{ flex: 1, minWidth: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-        {renderLinkedText(field.value)}
+        {renderDiffValue(field.value, field.label)}
       </span>
     </div>
   );
