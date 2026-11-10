@@ -7,10 +7,12 @@ type GetUserReq = PageFilter & {
   username?: string;
   email?: string;
   phone?: string;
+  permissions?: string;
 };
 export interface GetUserRes {
   uuid: string;
   username: string;
+  nickname?: string;
   email: string;
   phone?: string | null;
   status: number;
@@ -20,6 +22,7 @@ export interface GetUserRes {
   ip?: string;
   region?: string;
   latestLoginTime?: number;
+  permissions?: string[];
 }
 
 export interface UserRegistrationTrendPoint {
@@ -51,12 +54,19 @@ export const getUser = (opt?: GetUserReq): Promise<PageResult<GetUserRes>> => {
 
 export type PatchUserReq = {
   status?: number;
+  permissions?: string[];
 };
 export const patchUser = (opt: PatchUserReq, uuid: string): Promise<void> => {
   return request({
     url: `/api/v1/admin/users/${uuid}`,
     method: 'PATCH',
     data: opt,
+  });
+};
+
+export const getUserPermissionDict = (): Promise<Record<string, string>> => {
+  return request({
+    url: '/api/v1/admin/users/permission-dict',
   });
 };
 

@@ -1,12 +1,31 @@
 import EChart from '@/components/EChart';
 import UuidCell from '@/components/UuidCell';
 import type { GetUserRes } from '@/services/modules/user';
-import { deleteUser, getUser, getUserStatistics, patchUser } from '@/services/modules/user';
+import {
+  deleteUser,
+  getUser,
+  getUserPermissionDict,
+  getUserStatistics,
+  patchUser,
+} from '@/services/modules/user';
 import { completeImgUrl } from '@/utils/utils';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import type { ActionType } from '@ant-design/pro-components';
 import { useRequest } from 'ahooks';
-import { Button, Card, Col, Popconfirm, Row, Space, Statistic, Switch, message } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Drawer,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Switch,
+  Tag,
+  message,
+} from 'antd';
 import type { EChartsCoreOption } from 'echarts/core';
 import { useMemo, useRef, useState } from 'react';
 
@@ -21,6 +40,11 @@ export default () => {
   const actionRef = useRef<ActionType | undefined>(undefined);
   const [patchLoading, setPatchLoading] = useState<Record<string, boolean>>({});
   const [deleteLoading, setDeleteLoading] = useState<Record<string, boolean>>({});
+  const { data: permissionDict } = useRequest(getUserPermissionDict);
+  const [permissionTarget, setPermissionTarget] = useState<GetUserRes | null>(null);
+  const [permissionValues, setPermissionValues] = useState<string[]>([]);
+  const [savePermissionsLoading, setSavePermissionsLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<GetUserRes | null>(null);
 
   const {
     data: statistics,
@@ -74,16 +98,31 @@ export default () => {
       });
   };
 
-  const handleDelete = (uuid: string) => {
-    setDeleteLoading((prev) => ({ ...prev, [uuid]: true }));
-    deleteUser(uuid)
+  const handleDelete = (record: GetUserRes) => {
+    setDeleteLoading((prev) => ({ ...prev, [record.uuid]: true }));
+    deleteUser(record.uuid)
       .then(() => {
         message.success('删除成功');
+        setDeleteTarget(null);
         refreshStatistics();
         actionRef.current?.reload();
       })
       .finally(() => {
-        setDeleteLoading((prev) => ({ ...prev, [uuid]: false }));
+        setDeleteLoading((prev) => ({ ...prev, [record.uuid]: false }));
+      });
+  };
+
+  const handleSavePermissions = () => {
+    if (!permissionTarget) return;
+    setSavePermissionsLoading(true);
+    patchUser({ permissions: permissionValues }, permissionTarget.uuid)
+      .then(() => {
+        message.success('操作成功');
+        setPermissionTarget(null);
+        actionRef.current?.reload();
+      })
+      .finally(() => {
+        setSavePermissionsLoading(false);
       });
   };
 
@@ -155,7 +194,7 @@ export default () => {
             `第 ${start}-${end} 条/总共 ${total} 条`,
         }}
         request={(param) => {
-          const { current, pageSize, uuid, username, email, phone } = param;
+          const { current, pageSize, uuid, username, email, phone, permissions } = param;
           return getUser({
             pageSize,
             pageIndex: current,
@@ -163,6 +202,7 @@ export default () => {
             username,
             email,
             phone,
+            permissions: permissions?.length ? permissions.join(',') : undefined,
           }).then((res) => {
             return {
               success: true,
@@ -224,6 +264,32 @@ export default () => {
             title: '手机号',
             dataIndex: 'phone',
             render: (_, record) => maskPhone(record.phone) || '--',
+          },
+          {
+            align: 'left',
+            title: '权限',
+            dataIndex: 'permissions',
+            valueType: 'select',
+            fieldProps: {
+              mode: 'multiple',
+              allowClear: true,
+              placeholder: '请选择权限（多选取交集）',
+              options: Object.entries(permissionDict || {}).map(([key, text]) => ({
+                value: key,
+                label: text,
+              })),
+            },
+            width: 160,
+            render: (_, record) =>
+              (record.permissions || []).length ? (
+                (record.permissions || []).map((key) => (
+                  <Tag key={key} color="blue">
+                    {permissionDict?.[key] || key}
+                  </Tag>
+                ))
+              ) : (
+                '--'
+              ),
           },
           {
             align: 'center',
@@ -288,27 +354,85 @@ export default () => {
             title: '操作',
             key: 'option',
             valueType: 'option',
-            width: 120,
+            width: 180,
             render: (_, record) => {
               return (
                 <Space direction="horizontal">
-                  <Popconfirm
-                    title="确定删除吗?"
-                    okButtonProps={{ loading: deleteLoading[record.uuid] }}
-                    onConfirm={() => {
-                      handleDelete(record.uuid);
+                  <Button
+                    onClick={() => {
+                      setPermissionTarget(record);
+                      setPermissionValues(record.permissions || []);
                     }}
                   >
-                    <Button type="primary" danger loading={deleteLoading[record.uuid]}>
-                      删除
-                    </Button>
-                  </Popconfirm>
+                    权限
+                  </Button>
+                  <Button
+                    type="primary"
+                    danger
+                    loading={deleteLoading[record.uuid]}
+                    onClick={() => setDeleteTarget(record)}
+                  >
+                    删除
+                  </Button>
                 </Space>
               );
             },
           },
         ]}
       />
+      <Modal
+        title="删除用户"
+        open={!!deleteTarget}
+        okText="删除"
+        okButtonProps={{ danger: true, loading: deleteTarget ? !!deleteLoading[deleteTarget.uuid] : false }}
+        onOk={() => {
+          if (deleteTarget) {
+            handleDelete(deleteTarget);
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      >
+        <p>
+          确定删除用户「{deleteTarget?.username}」
+          {deleteTarget?.nickname ? `（${deleteTarget.nickname}）` : ''}吗？
+        </p>
+        <p style={{ color: '#ff4d4f' }}>删除后该用户的所有数据将不可恢复，请谨慎操作。</p>
+      </Modal>
+      <Drawer
+        title={`编辑权限${permissionTarget ? `：${permissionTarget.username}` : ''}`}
+        width={480}
+        open={!!permissionTarget}
+        onClose={() => setPermissionTarget(null)}
+        footer={
+          <div style={{ textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => setPermissionTarget(null)}>取消</Button>
+              <Button type="primary" loading={savePermissionsLoading} onClick={handleSavePermissions}>
+                保存
+              </Button>
+            </Space>
+          </div>
+        }
+      >
+        {permissionTarget && (
+          <>
+            <p style={{ color: '#8c8c8c', marginBottom: 16 }}>
+              用户：{permissionTarget.email}
+            </p>
+            <Select
+              mode="multiple"
+              style={{ width: '100%' }}
+              placeholder="请选择权限"
+              value={permissionValues}
+              onChange={setPermissionValues}
+              options={Object.entries(permissionDict || {}).map(([key, text]) => ({
+                value: key,
+                label: text,
+              }))}
+            />
+          </>
+        )}
+      </Drawer>
     </PageContainer>
   );
 };
