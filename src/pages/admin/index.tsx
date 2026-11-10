@@ -33,7 +33,7 @@ export default () => {
           showTotal: (total: number, [start, end]: [number, number]) =>
             `第 ${start}-${end} 条/总共 ${total} 条`,
         }}
-        toolBarRender={() => [<Add key="add" reload={actionRef.current?.reload} />]}
+        toolBarRender={() => [<Add key="add" reload={() => actionRef.current?.reload()} />]}
         request={(param) => {
           const { current, pageSize } = param;
           return getAdmin({
@@ -192,13 +192,13 @@ export default () => {
               return (
                 <Space direction="horizontal">
                   <Add
-                    reload={actionRef.current?.reload}
+                    reload={() => actionRef.current?.reload()}
                     data={{
                       ...record,
                     }}
                   />
                   <UpdatePassword
-                    reload={actionRef.current?.reload}
+                    reload={() => actionRef.current?.reload()}
                     data={{
                       ...record,
                     }}

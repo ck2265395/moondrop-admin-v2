@@ -28,7 +28,10 @@ export default (props: Props) => {
     } as FormData;
     const service = data?.uuid
       ? patchAdmin(newValues, data.uuid)
-      : postAdmin(newValues as PostAdminReq);
+      : (() => {
+          delete newValues.confirmPassword;
+          return postAdmin(newValues as PostAdminReq);
+        })();
     return service
       .then(() => {
         message.success('操作成功');
