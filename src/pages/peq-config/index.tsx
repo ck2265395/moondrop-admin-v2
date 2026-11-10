@@ -223,6 +223,7 @@ export default () => {
         columnsState={{
           defaultValue: {
             independentChannelTuning: { show: false },
+            source: { show: false },
           },
         }}
         columns={[
