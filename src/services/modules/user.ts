@@ -64,6 +64,25 @@ export const patchUser = (opt: PatchUserReq, uuid: string): Promise<void> => {
   });
 };
 
+export interface PostAdminUserReq {
+  username: string;
+  email: string;
+  password: string;
+  phone?: string;
+  status?: number;
+  permissions?: string[];
+}
+/** 后台新建用户（免邮箱验证码，供开发测试） */
+export const postAdminUser = (
+  opt: PostAdminUserReq,
+): Promise<{ uuid: string }> => {
+  return request({
+    url: '/api/v1/admin/users',
+    method: 'POST',
+    data: opt,
+  });
+};
+
 export const getUserPermissionDict = (): Promise<Record<string, string>> => {
   return request({
     url: '/api/v1/admin/users/permission-dict',

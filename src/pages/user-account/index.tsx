@@ -7,6 +7,7 @@ import {
   getUserPermissionDict,
   getUserStatistics,
   patchUser,
+  postAdminUser,
 } from '@/services/modules/user';
 import { completeImgUrl } from '@/utils/utils';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
@@ -17,6 +18,8 @@ import {
   Card,
   Col,
   Drawer,
+  Form,
+  Input,
   Modal,
   Row,
   Select,
@@ -24,8 +27,10 @@ import {
   Statistic,
   Switch,
   Tag,
+  Tooltip,
   message,
 } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import type { EChartsCoreOption } from 'echarts/core';
 import { useMemo, useRef, useState } from 'react';
 
@@ -126,6 +131,34 @@ export default () => {
       });
   };
 
+  // ===== 后台新建用户（开发测试用） =====
+  const [createForm] = Form.useForm();
+  const [createVisible, setCreateVisible] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+
+  const handleCreateUser = async () => {
+    const values = await createForm.validateFields();
+    setCreateLoading(true);
+    postAdminUser({
+      username: values.username,
+      email: values.email,
+      password: values.password,
+      phone: values.phone,
+      status: values.status ?? 1,
+      permissions: values.permissions,
+    })
+      .then(() => {
+        message.success('创建成功');
+        setCreateVisible(false);
+        createForm.resetFields();
+        refreshStatistics();
+        actionRef.current?.reload();
+      })
+      .finally(() => {
+        setCreateLoading(false);
+      });
+  };
+
   return (
     <PageContainer>
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -188,6 +221,19 @@ export default () => {
       <ProTable<GetUserRes>
         actionRef={actionRef}
         rowKey="uuid"
+        toolBarRender={() => [
+          <Tooltip key="create" title="新建用户（开发测试用）">
+            <Button
+              type="text"
+              icon={
+                <PlusOutlined
+                  style={{ color: '#8c8c8c', fontSize: 16, fontWeight: 700, strokeWidth: 40 }}
+                />
+              }
+              onClick={() => setCreateVisible(true)}
+            />
+          </Tooltip>,
+        ]}
         pagination={{
           showSizeChanger: true,
           showTotal: (total: number, [start, end]: [number, number]) =>
@@ -433,6 +479,66 @@ export default () => {
           </>
         )}
       </Drawer>
+      <Modal
+        title="新建用户（开发测试用）"
+        open={createVisible}
+        okText="创建"
+        okButtonProps={{ loading: createLoading }}
+        onOk={handleCreateUser}
+        onCancel={() => {
+          setCreateVisible(false);
+          createForm.resetFields();
+        }}
+      >
+        <Form form={createForm} layout="vertical" initialValues={{ status: 1 }}>
+          <Form.Item
+            name="username"
+            label="用户名"
+            rules={[{ required: true, message: '请输入用户名' }]}
+          >
+            <Input maxLength={30} placeholder="用户名（唯一）" />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="邮箱"
+            rules={[
+              { required: true, message: '请输入邮箱' },
+              { type: 'email', message: '邮箱格式不正确' },
+            ]}
+          >
+            <Input maxLength={30} placeholder="邮箱（唯一）" />
+          </Form.Item>
+          <Form.Item
+            name="password"
+            label="密码"
+            rules={[{ required: true, message: '请输入密码' }]}
+          >
+            <Input.Password maxLength={30} placeholder="登录密码" />
+          </Form.Item>
+          <Form.Item name="phone" label="手机号">
+            <Input maxLength={20} placeholder="选填" />
+          </Form.Item>
+          <Form.Item name="status" label="状态">
+            <Select
+              options={[
+                { value: 1, label: '启用' },
+                { value: 0, label: '禁用' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name="permissions" label="权限">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="选填"
+              options={Object.entries(permissionDict || {}).map(([key, text]) => ({
+                value: key,
+                label: text,
+              }))}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </PageContainer>
   );
 };
