@@ -20,6 +20,7 @@ import {
   FileProtectOutlined,
   FileSearchOutlined,
   HomeOutlined,
+  LoginOutlined,
   LogoutOutlined,
   LineChartOutlined,
   MenuFoldOutlined,
@@ -97,6 +98,7 @@ const menuIconMap: Record<string, ReactNode> = {
   '/system-info': <DashboardOutlined />,
   '/system-config': <ControlOutlined />,
   '/operation-log': <FileSearchOutlined />,
+  '/login-log': <LoginOutlined />,
 };
 
 export default function BasicLayout() {
@@ -244,6 +246,7 @@ export default function BasicLayout() {
           { path: '/system-info', name: intl.formatMessage({ id: 'menu.systemInfo' }) },
           { path: '/system-config', name: intl.formatMessage({ id: 'menu.systemConfig' }) },
           { path: '/operation-log', name: intl.formatMessage({ id: 'menu.operationLog' }) },
+          { path: '/login-log', name: intl.formatMessage({ id: 'menu.loginLog' }) },
         ],
       },
     ],

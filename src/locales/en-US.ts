@@ -42,6 +42,7 @@ export default {
   'menu.systemInfo': 'System Info',
   'menu.systemConfig': 'System Config',
   'menu.operationLog': 'Operation Logs',
+  'menu.loginLog': 'Login Logs',
   'page.placeholder': 'This module is under construction. Stay tuned.',
   'menu.home': 'Home',
   'home.welcome': 'Welcome back',

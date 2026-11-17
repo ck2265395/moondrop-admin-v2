@@ -2,14 +2,36 @@ import request from '../request';
 import type { PageFilter } from '@/interfaces/PageFilter';
 import type { PageResult } from '@/interfaces/PageResult';
 
+export interface AdminCaptcha {
+  captchaId: string;
+  /** 用户输入的验证码字符（不区分大小写） */
+  code: string;
+}
+
 export interface PostAdminLoginReq {
   username: string;
   password: string;
+  /** 后台关闭图形验证码时可不传 */
+  captcha?: AdminCaptcha;
 }
 
 export interface PostAdminLoginRes {
   token: string;
 }
+
+export interface GetAdminCaptchaRes {
+  /** 是否开启图形验证码，关闭时 captchaId/svg 为空 */
+  enabled: boolean;
+  captchaId: string;
+  /** 验证码 SVG 文本 */
+  svg: string;
+}
+
+export const getAdminCaptcha = (): Promise<GetAdminCaptchaRes> => {
+  return request({
+    url: '/api/v1/admins/captcha',
+  });
+};
 
 export const postAdminLogin = (opt: PostAdminLoginReq): Promise<PostAdminLoginRes> => {
   return request({

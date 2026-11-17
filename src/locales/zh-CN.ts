@@ -42,6 +42,7 @@ export default {
   'menu.systemInfo': '系统信息',
   'menu.systemConfig': '系统配置',
   'menu.operationLog': '操作日志',
+  'menu.loginLog': '登录日志',
   'page.placeholder': '功能建设中，敬请期待。',
   'menu.home': '首页',
   'home.welcome': '欢迎回来',

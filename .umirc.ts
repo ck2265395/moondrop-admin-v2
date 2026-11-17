@@ -56,6 +56,7 @@ export default defineConfig({
     { path: '/system-info', name: 'menu.systemInfo', component: './system-info' },
     { path: '/system-config', name: 'menu.systemConfig', component: './system-config' },
     { path: '/operation-log', name: 'menu.operationLog', component: './operation-log' },
+    { path: '/login-log', name: 'menu.loginLog', component: './login-log' },
   ],
   proxy: {
     '/api': {

@@ -1,12 +1,12 @@
 import type { PostAdminLoginReq } from '@/services/modules/admin'
-import { postAdminLogin } from '@/services/modules/admin'
+import { getAdminCaptcha, postAdminLogin } from '@/services/modules/admin'
 import { getPublicConfig } from '@/services/modules/system-config'
 import { completeImgUrl } from '@/utils/utils'
-import { LockOutlined, UserOutlined } from '@ant-design/icons'
+import { LockOutlined, SafetyOutlined, UserOutlined } from '@ant-design/icons'
 import { history, useModel } from '@umijs/max'
 import { useRequest } from 'ahooks'
 import { Button, Divider, Form, Input, message } from 'antd'
-import React from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 // ===== 极简 SVG 图标 =====
 
@@ -229,10 +229,37 @@ const DEFAULT_BRAND_TITLE = 'MOONDROP 运营支撑系统'
 const DEFAULT_SUBTITLE = '水月雨 · 听见理性的声音'
 
 export default function LoginPage() {
-  const [form] = Form.useForm<PostAdminLoginReq>()
+  const [form] = Form.useForm<PostAdminLoginReq & { code?: string }>()
   const { data: publicConfig } = useRequest(getPublicConfig, {
     onError: () => {},
   })
+  const [captcha, setCaptcha] = useState<{ captchaId: string; svg: string }>({
+    captchaId: '',
+    svg: '',
+  })
+  const [captchaEnabled, setCaptchaEnabled] = useState(true)
+  const [captchaLoading, setCaptchaLoading] = useState(false)
+
+  // 图形验证码：答案一次性消费，登录失败/点击图片都要重新拉取
+  // 后台可关闭验证码，接口返回 enabled=false 时隐藏输入框
+  const refreshCaptcha = useCallback(async () => {
+    setCaptchaLoading(true)
+    try {
+      const res = await getAdminCaptcha()
+      setCaptchaEnabled(res.enabled)
+      setCaptcha({ captchaId: res.captchaId, svg: res.svg })
+    } catch {
+      setCaptcha({ captchaId: '', svg: '' })
+      message.error('验证码加载失败，请点击图片重试')
+    } finally {
+      setCaptchaLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    refreshCaptcha()
+  }, [refreshCaptcha])
+
   const { loading: postAdminLoginLoading, run: postAdminLoginRun } = useRequest(postAdminLogin, {
     manual: true,
     onSuccess: (res) => {
@@ -243,7 +270,30 @@ export default function LoginPage() {
       // 用新 token 拉取完整管理员信息（用户名、头像）
       window.location.href = '/'
     },
+    onError: () => {
+      form.setFieldValue('code', '')
+      refreshCaptcha()
+    },
   })
+
+  const handleFinish = (values: PostAdminLoginReq & { code?: string }) => {
+    if (captchaEnabled && !captcha.captchaId) {
+      message.warning('验证码未加载，请点击图片刷新')
+      return
+    }
+    postAdminLoginRun({
+      username: values.username,
+      password: values.password,
+      ...(captchaEnabled
+        ? {
+            captcha: {
+              captchaId: captcha.captchaId,
+              code: values.code ?? '',
+            },
+          }
+        : {}),
+    })
+  }
 
   // Casdoor SSO 登录
   const redirectToCasdoor = () => {
@@ -612,9 +662,7 @@ export default function LoginPage() {
           <Form
             form={form}
             size="large"
-            onFinish={(values) => {
-              postAdminLoginRun(values)
-            }}
+            onFinish={handleFinish}
           >
             <Form.Item
               name="username"
@@ -637,10 +685,9 @@ export default function LoginPage() {
               rules={[{ required: true, message: '请输入密码' }]}
               style={{ marginBottom: '22px' }}
             >
-              <Input
+              <Input.Password
                 prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
                 placeholder="密码"
-                type="password"
                 style={{
                   borderRadius: '0',
                   height: '46px',
@@ -649,6 +696,50 @@ export default function LoginPage() {
                 }}
               />
             </Form.Item>
+            {captchaEnabled && (
+              <Form.Item style={{ marginBottom: '22px' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                  <Form.Item
+                    name="code"
+                    noStyle
+                    rules={[{ required: true, message: '请输入验证码' }]}
+                  >
+                    <Input
+                      prefix={<SafetyOutlined style={{ color: '#bfbfbf' }} />}
+                      placeholder="验证码"
+                      maxLength={4}
+                      autoComplete="off"
+                      style={{
+                        flex: 1,
+                        borderRadius: '0',
+                        height: '46px',
+                        border: '1px solid #e5e7eb',
+                        background: '#fff',
+                      }}
+                    />
+                  </Form.Item>
+                  <img
+                    src={
+                      captcha.svg
+                        ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(captcha.svg)}`
+                        : undefined
+                    }
+                    alt="验证码"
+                    title="点击刷新"
+                    onClick={refreshCaptcha}
+                    style={{
+                      flex: '0 0 132px',
+                      width: '132px',
+                      height: '46px',
+                      border: '1px solid #e5e7eb',
+                      background: '#f3f4f6',
+                      cursor: captchaLoading ? 'progress' : 'pointer',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </div>
+              </Form.Item>
+            )}
             <Form.Item style={{ marginBottom: 0 }}>
               <Button
                 type="primary"
