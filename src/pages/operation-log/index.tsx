@@ -551,6 +551,7 @@ const MODULE_ENUM: Record<string, string> = {
   'protocol-v2': '协议V2',
   'peq-config': '配置文件',
   'peq-config-tag': '配置标签',
+  'microphone-adjust': '麦克风校准',
   'system-config': '系统配置',
 };
 
