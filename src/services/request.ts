@@ -46,11 +46,16 @@ function reqError(error: Error) {
   return Promise.reject(error);
 }
 
+// Casdoor 待审核/审核未通过：由登录回调页统一弹窗提示，避免全局提示与弹窗重复
+const SILENT_ERROR_CODES = [9504, 9505];
+
 function resSuccess(res: AxiosResponse<Response>) {
   const { data } = res;
   // 与 v1 约定一致：业务码非 0 视为失败（登录接口本身也返回统一结构）
   if (data.code) {
-    message.warning(data.desc);
+    if (!SILENT_ERROR_CODES.includes(data.code)) {
+      message.warning(data.desc);
+    }
     const error = {
       ...new Error(data.desc),
       config: res.config,

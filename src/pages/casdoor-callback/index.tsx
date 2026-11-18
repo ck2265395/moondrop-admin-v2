@@ -1,7 +1,12 @@
-import { postAdminCasdoorLogin } from '@/services/modules/admin'
+import {
+  ADMIN_AUDIT_REJECTED,
+  ADMIN_PENDING_APPROVAL,
+  postAdminCasdoorLogin,
+} from '@/services/modules/admin'
 import { history } from '@umijs/max'
 import { useRequest } from 'ahooks'
-import { Spin, message } from 'antd'
+import { Modal, Spin, message } from 'antd'
+import type { AxiosError } from 'axios'
 import { useEffect, useRef } from 'react'
 
 export default () => {
@@ -14,7 +19,28 @@ export default () => {
       // 会被守卫踢回 /login；刷新后 getInitialState 用新 token 拉取完整信息
       window.location.href = '/'
     },
-    onError: () => {
+    onError: (error) => {
+      const err = error as AxiosError<{ code: number; desc: string }>
+      const code = err?.response?.data?.code
+      const desc = err?.response?.data?.desc
+      if (code === ADMIN_PENDING_APPROVAL) {
+        Modal.info({
+          title: '账号待审核',
+          content: desc || '账号已提交，请联系管理员审核通过后再登录',
+          centered: true,
+          onOk: () => history.replace('/login'),
+        })
+        return
+      }
+      if (code === ADMIN_AUDIT_REJECTED) {
+        Modal.info({
+          title: '审核未通过',
+          content: desc || '账号审核未通过，请联系管理员',
+          centered: true,
+          onOk: () => history.replace('/login'),
+        })
+        return
+      }
       history.replace('/login')
     },
   })

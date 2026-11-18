@@ -15,6 +15,8 @@ export interface GetLoginLogRes {
   uuid: string;
   username: string;
   adminUuid?: string | null;
+  /** 按 adminUuid 关联的管理员姓名，已删除或未注册时为空 */
+  adminName?: string;
   loginType: 'password' | 'casdoor';
   success: boolean;
   failReason: string;

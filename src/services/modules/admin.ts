@@ -62,9 +62,12 @@ export const postAdminCasdoorLogin = (opt: PostAdminCasdoorLoginReq): Promise<Po
   });
 };
 
+export const ADMIN_PENDING_APPROVAL = 9504;
+export const ADMIN_AUDIT_REJECTED = 9505;
+
 export interface GetAdminMineRes {
   uuid: string;
-  status: 0 | 1;
+  status: 0 | 1 | 2 | 3;
   username: string;
   name: string;
   mobile: string;
@@ -83,7 +86,9 @@ export const getAdminMine = (): Promise<GetAdminMineRes> => {
   });
 };
 
-type GetAdminReq = PageFilter;
+type GetAdminReq = PageFilter & {
+  status?: number;
+};
 export interface GetAdminRes {
   uuid: string;
   username: string;
@@ -91,9 +96,13 @@ export interface GetAdminRes {
   job: string;
   mobile: string;
   casdoorUsername: string | null;
+  casdoorOrg: string;
   casdoorEmail: string | null;
   casdoorAvatar: string | null;
   casdoorRoles: string | null;
+  company: string;
+  department: string;
+  auditRemark: string;
   status: number;
   updateTime: number;
   createTime: number;
@@ -112,7 +121,10 @@ export interface PostAdminReq {
   username: string;
   password: string;
   status: number;
-  casdoorUsername?: string;
+  company?: string;
+  department?: string;
+  /** 头像地址（完整 URL，含域名） */
+  casdoorAvatar?: string;
 }
 export const postAdmin = (opt: PostAdminReq): Promise<void> => {
   return request({
@@ -127,6 +139,20 @@ export type PatchAdminReq = Partial<Omit<PostAdminReq, 'username'>>;
 export const patchAdmin = (opt: PatchAdminReq, uuid: string): Promise<void> => {
   return request({
     url: `/api/v1/admins/${uuid}`,
+    method: 'PATCH',
+    data: opt,
+  });
+};
+
+export interface AdminAuditReq {
+  /** 1：通过，3：驳回 */
+  status: 1 | 3;
+  /** 驳回原因，驳回时必填 */
+  remark?: string;
+}
+export const patchAdminAudit = (opt: AdminAuditReq, uuid: string): Promise<void> => {
+  return request({
+    url: `/api/v1/admins/${uuid}/audit`,
     method: 'PATCH',
     data: opt,
   });

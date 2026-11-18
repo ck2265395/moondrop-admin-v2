@@ -20,12 +20,11 @@ export default () => {
             `第 ${start}-${end} 条/总共 ${total} 条`,
         }}
         request={(params) => {
-          const { current, pageSize, username, success, startTime, endTime } = params;
+          const { current, pageSize, username, startTime, endTime } = params;
           return getLoginLogs({
             pageSize,
             pageIndex: current,
             username,
-            success,
             startTime,
             endTime,
           }).then((res) => ({
@@ -40,30 +39,10 @@ export default () => {
             align: 'center',
             title: '用户名',
             dataIndex: 'username',
-            width: 160,
+            width: 280,
             order: 100,
-          },
-          {
-            align: 'center',
-            title: '结果',
-            dataIndex: 'success',
-            width: 90,
-            valueType: 'select',
-            valueEnum: {
-              true: { text: '成功' },
-              false: { text: '失败' },
-            },
-            fieldProps: { placeholder: '全部' },
             render: (_, record) =>
-              record.success ? <Tag color="green">成功</Tag> : <Tag color="red">失败</Tag>,
-          },
-          {
-            align: 'center',
-            title: '失败原因',
-            dataIndex: 'failReason',
-            width: 240,
-            search: false,
-            render: (_, record) => record.failReason || '-',
+              record.adminName ? `${record.username}(${record.adminName})` : record.username,
           },
           {
             align: 'center',

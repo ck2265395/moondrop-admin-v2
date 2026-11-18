@@ -1,6 +1,8 @@
+import FileUpload from '@/components/FileUpload';
 import type { GetAdminRes, PostAdminReq } from '@/services/modules/admin';
 import { patchAdmin, postAdmin } from '@/services/modules/admin';
-import { DrawerForm, ProFormSwitch, ProFormText } from '@ant-design/pro-components';
+import { completeImgUrl } from '@/utils/utils';
+import { DrawerForm, ProForm, ProFormSwitch, ProFormText } from '@ant-design/pro-components';
 import { Button, Form, Grid, message } from 'antd';
 
 interface Props {
@@ -12,6 +14,8 @@ interface FormData extends Omit<PostAdminReq, 'username' | 'password'> {
   username?: string;
   password?: string;
   confirmPassword?: string;
+  /** 头像上传值：新上传为 CDN key，编辑回显为完整 URL */
+  avatars?: string[];
 }
 
 export default (props: Props) => {
@@ -22,8 +26,11 @@ export default (props: Props) => {
   const [form] = Form.useForm<FormData>();
 
   const handleSubmit = (values: FormData) => {
+    const { avatars, ...rest } = values;
     const newValues = {
-      ...values,
+      ...rest,
+      // 上传接口返回的是不带域名的 key，入库统一存完整地址；Casdoor 头像本身已是完整地址
+      casdoorAvatar: avatars?.[0] ? completeImgUrl(avatars[0]) : '',
       status: values.status ? 1 : 0,
     } as FormData;
     const service = data?.uuid
@@ -54,7 +61,9 @@ export default (props: Props) => {
               mobile: data.mobile,
               job: data.job,
               status: data.status,
-              casdoorUsername: data.casdoorUsername ?? undefined,
+              company: data.company,
+              department: data.department,
+              avatars: data.casdoorAvatar ? [data.casdoorAvatar] : [],
             });
           }
         } else {
@@ -100,13 +109,13 @@ export default (props: Props) => {
         </>
       )}
       <ProFormText name="name" label="姓名" rules={[{ required: true, message: '请输入' }]} />
+      <ProForm.Item name="avatars" label="头像">
+        <FileUpload fileGroup="admin-avatar" max={1} />
+      </ProForm.Item>
       <ProFormText name="job" label="职位" rules={[{ required: true, message: '请输入' }]} />
       <ProFormText name="mobile" label="手机号" rules={[{ required: true, message: '请输入' }]} />
-      <ProFormText
-        name="casdoorUsername"
-        label="Casdoor 账号名"
-        tooltip="绑定后可通过企业统一登录进入后台，留空则仅支持账密登录"
-      />
+      <ProFormText name="company" label="公司" />
+      <ProFormText name="department" label="部门" />
       <ProFormSwitch
         fieldProps={{ style: { maxWidth: '100%' } }}
         name="status"

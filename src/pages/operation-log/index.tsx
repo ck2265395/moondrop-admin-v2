@@ -576,12 +576,12 @@ export default () => {
             `第 ${start}-${end} 条/总共 ${total} 条`,
         }}
         request={(params) => {
-          const { current, pageSize, adminUsername, module, action, summary, startTime, endTime } =
+          const { current, pageSize, adminUuid, module, action, summary, startTime, endTime } =
             params;
           return getOperationLogs({
             pageSize,
             pageIndex: current,
-            adminUsername,
+            adminUuid,
             module,
             action,
             summary,
@@ -598,11 +598,15 @@ export default () => {
           {
             align: 'center',
             title: '管理员',
-            dataIndex: 'adminUsername',
-            width: 160,
+            dataIndex: 'adminUuid',
+            width: 200,
             valueType: 'select',
             fieldProps: { showSearch: true },
-            valueEnum: Object.fromEntries((admins || []).map((a) => [a, { text: a }])),
+            valueEnum: Object.fromEntries((admins || []).map((a) => [a.uuid, { text: a.name }])),
+            render: (_, record) =>
+              record.adminName && record.adminName !== record.adminUsername
+                ? `${record.adminUsername}(${record.adminName})`
+                : record.adminUsername,
             order: 70,
           },
           {
