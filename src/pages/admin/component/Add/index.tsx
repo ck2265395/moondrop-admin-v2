@@ -3,17 +3,19 @@ import type { GetAdminRes, PostAdminReq } from '@/services/modules/admin';
 import { patchAdmin, postAdmin } from '@/services/modules/admin';
 import { completeImgUrl } from '@/utils/utils';
 import { DrawerForm, ProForm, ProFormSwitch, ProFormText } from '@ant-design/pro-components';
-import { Button, Form, Grid, message } from 'antd';
+import { Button, Form, Grid, message, Radio } from 'antd';
 
 interface Props {
   data?: GetAdminRes;
   reload?: () => void;
 }
 
-interface FormData extends Omit<PostAdminReq, 'username' | 'password'> {
+interface FormData extends Omit<PostAdminReq, 'username' | 'password' | 'status'> {
   username?: string;
   password?: string;
   confirmPassword?: string;
+  /** 开关/状态值：新建为布尔开关值；编辑为 0 禁用 / 1 启用 / 2 待审核 / 3 已驳回 */
+  status?: boolean | number;
   /** 头像上传值：新上传为 CDN key，编辑回显为完整 URL */
   avatars?: string[];
 }
@@ -31,8 +33,8 @@ export default (props: Props) => {
       ...rest,
       // 上传接口返回的是不带域名的 key，入库统一存完整地址；Casdoor 头像本身已是完整地址
       casdoorAvatar: avatars?.[0] ? completeImgUrl(avatars[0]) : '',
-      status: values.status ? 1 : 0,
-    } as FormData;
+      status: data?.uuid ? Number(values.status) : values.status ? 1 : 0,
+    };
     const service = data?.uuid
       ? patchAdmin(newValues, data.uuid)
       : (() => {
@@ -112,18 +114,32 @@ export default (props: Props) => {
       <ProForm.Item name="avatars" label="头像">
         <FileUpload fileGroup="admin-avatar" max={1} />
       </ProForm.Item>
-      <ProFormText name="job" label="职位" rules={[{ required: true, message: '请输入' }]} />
-      <ProFormText name="mobile" label="手机号" rules={[{ required: true, message: '请输入' }]} />
+      <ProFormText name="job" label="职位" />
+      <ProFormText name="mobile" label="手机号" />
       <ProFormText name="company" label="公司" />
       <ProFormText name="department" label="部门" />
-      <ProFormSwitch
-        fieldProps={{ style: { maxWidth: '100%' } }}
-        name="status"
-        label="状态"
-        checkedChildren="启用"
-        unCheckedChildren="禁用"
-        rules={[{ required: true, message: '请选择' }]}
-      />
+      {data?.uuid ? (
+        <ProForm.Item name="status" label="状态" rules={[{ required: true, message: '请选择' }]}>
+          <Radio.Group
+            optionType="button"
+            options={[
+              { label: '禁用', value: 0 },
+              { label: '启用', value: 1 },
+              { label: '待审核', value: 2 },
+              { label: '已驳回', value: 3 },
+            ]}
+          />
+        </ProForm.Item>
+      ) : (
+        <ProFormSwitch
+          fieldProps={{ style: { maxWidth: '100%' } }}
+          name="status"
+          label="状态"
+          checkedChildren="启用"
+          unCheckedChildren="禁用"
+          rules={[{ required: true, message: '请选择' }]}
+        />
+      )}
     </DrawerForm>
   );
 };

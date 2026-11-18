@@ -530,11 +530,13 @@ const ACTION_ENUM = {
   create: { text: '新增' },
   update: { text: '修改' },
   delete: { text: '删除' },
+  audit: { text: '审核' },
   'sync-push': { text: '推送同步' },
 };
 
 /** 模块英文标识 → 中文展示 */
 const MODULE_ENUM: Record<string, string> = {
+  admin: '管理员',
   product: '产品',
   'product-relation': '产品-关联',
   'product-ota-relation': 'OTA-关联',
@@ -558,6 +560,7 @@ const ACTION_COLOR: Record<string, string> = {
   create: 'green',
   update: 'blue',
   delete: 'red',
+  audit: 'gold',
   'sync-push': 'purple',
 };
 
