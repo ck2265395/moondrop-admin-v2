@@ -782,7 +782,7 @@ export default function LoginPage() {
             aria-label="水月雨统一认证登录"
           >
             <img
-              src="https://cn.cdn.moondroplab.com/625fb843a8046c1c7861d89e/626fd458d107ab020cfa3efb_logo.svg"
+              src={history.createHref({ pathname: '/brand/moondrop_logo.png' })}
               alt="水月雨"
             />
           </button>
