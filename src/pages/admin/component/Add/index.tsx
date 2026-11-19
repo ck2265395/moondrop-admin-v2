@@ -114,8 +114,15 @@ export default (props: Props) => {
       <ProForm.Item name="avatars" label="头像">
         <FileUpload fileGroup="admin-avatar" max={1} />
       </ProForm.Item>
-      <ProFormText name="job" label="职位" />
-      <ProFormText name="mobile" label="手机号" />
+      <ProFormText name="job" label="职位" rules={[{ required: true, message: '请输入' }]} />
+      <ProFormText
+        name="mobile"
+        label="手机号"
+        rules={[
+          { required: true, message: '请输入' },
+          { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' },
+        ]}
+      />
       <ProFormText name="company" label="公司" />
       <ProFormText name="department" label="部门" />
       {data?.uuid ? (
