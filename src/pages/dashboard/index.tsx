@@ -1,3 +1,4 @@
+import type { DashboardRegionItem } from '@/services/modules/metrics'
 import { getMetricsOverview } from '@/services/modules/metrics'
 import { completeImgUrl } from '@/utils/utils'
 import { PageContainer } from '@ant-design/pro-components'
@@ -60,10 +61,185 @@ const fmtRelative = (ts: number): string => {
   return dayjs(ts).format('MM-DD HH:mm')
 }
 
+/** 地域分布横向条形图：接口已按人数倒序，图表反转后第一名在最上方 */
+const renderRegionChart = (
+  instanceRef: { current: echarts.ECharts | null },
+  el: HTMLDivElement | null,
+  items: DashboardRegionItem[] | undefined,
+  color: string,
+  count = 10,
+) => {
+  if (!el || !items?.length) return
+  if (!instanceRef.current) instanceRef.current = echarts.init(el)
+  const list = items.slice(0, count).slice().reverse()
+  instanceRef.current.setOption(
+    {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: (params: unknown) => {
+          const p = (params as { name: string; value: number }[])[0]
+          return `${p.name}<br/>用户数：<b>${p.value}</b>`
+        },
+      },
+      grid: { top: 8, right: 40, bottom: 8, left: 8, containLabel: true },
+      xAxis: {
+        type: 'value',
+        minInterval: 1,
+        axisLabel: { color: '#8c8c8c', fontSize: 11 },
+        splitLine: { lineStyle: { color: '#f0f0f0' } },
+      },
+      yAxis: {
+        type: 'category',
+        data: list.map((item) => item.name),
+        axisLabel: { color: '#595959', fontSize: 11 },
+        axisLine: { show: false },
+        axisTick: { show: false },
+      },
+      series: [
+        {
+          type: 'bar',
+          data: list.map((item) => item.value),
+          barMaxWidth: 14,
+          itemStyle: { color, borderRadius: [0, 4, 4, 0] },
+          label: {
+            show: true,
+            position: 'right',
+            color: '#8c8c8c',
+            fontSize: 11,
+          },
+        },
+      ],
+    },
+    true,
+  )
+}
+
+/** 省份简称 → 地图数据全称（兼容 ip2region 可能返回的简称） */
+const CHINA_PROVINCE_ALIAS: Record<string, string> = {
+  北京: '北京市',
+  天津: '天津市',
+  上海: '上海市',
+  重庆: '重庆市',
+  河北: '河北省',
+  山西: '山西省',
+  内蒙古: '内蒙古自治区',
+  辽宁: '辽宁省',
+  吉林: '吉林省',
+  黑龙江: '黑龙江省',
+  江苏: '江苏省',
+  浙江: '浙江省',
+  安徽: '安徽省',
+  福建: '福建省',
+  江西: '江西省',
+  山东: '山东省',
+  河南: '河南省',
+  湖北: '湖北省',
+  湖南: '湖南省',
+  广东: '广东省',
+  广西: '广西壮族自治区',
+  海南: '海南省',
+  四川: '四川省',
+  贵州: '贵州省',
+  云南: '云南省',
+  西藏: '西藏自治区',
+  陕西: '陕西省',
+  甘肃: '甘肃省',
+  青海: '青海省',
+  宁夏: '宁夏回族自治区',
+  新疆: '新疆维吾尔自治区',
+  台湾: '台湾省',
+  香港: '香港特别行政区',
+  澳门: '澳门特别行政区',
+}
+
+const normalizeProvince = (name: string): string =>
+  CHINA_PROVINCE_ALIAS[name] ?? name
+
+let chinaMapPromise: Promise<void> | null = null
+
+/** 加载并注册中国地图（public/maps/china.json，相对部署路径） */
+const loadChinaMap = (): Promise<void> => {
+  if (!chinaMapPromise) {
+    chinaMapPromise = fetch('maps/china.json')
+      .then((res) => res.json())
+      .then((geoJson) => {
+        echarts.registerMap('china', geoJson)
+      })
+      .catch((error) => {
+        chinaMapPromise = null
+        throw error
+      })
+  }
+  return chinaMapPromise
+}
+
+/** 国内用户地域分布地图（省份热力） */
+const renderChinaMap = async (
+  instanceRef: { current: echarts.ECharts | null },
+  el: HTMLDivElement,
+  items: DashboardRegionItem[],
+) => {
+  try {
+    await loadChinaMap()
+  } catch {
+    return
+  }
+  if (!instanceRef.current) instanceRef.current = echarts.init(el)
+  const data = items.map((item) => ({
+    name: normalizeProvince(item.name),
+    value: item.value,
+  }))
+  const max = Math.max(...data.map((item) => item.value), 1)
+  instanceRef.current.setOption(
+    {
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: unknown) => {
+          const p = params as { name: string; value?: number }
+          return `${p.name}<br/>用户数：<b>${p.value ?? 0}</b>`
+        },
+      },
+      visualMap: {
+        min: 0,
+        max,
+        left: 8,
+        bottom: 8,
+        text: ['高', '低'],
+        calculable: true,
+        inRange: { color: ['#e6f4ff', '#1677ff'] },
+        textStyle: { color: '#8c8c8c', fontSize: 11 },
+      },
+      series: [
+        {
+          type: 'map',
+          map: 'china',
+          roam: false,
+          zoom: 1.1,
+          label: { show: false },
+          itemStyle: { areaColor: '#fafafa', borderColor: '#d9d9d9' },
+          emphasis: {
+            label: { show: true, fontSize: 11 },
+            itemStyle: { areaColor: '#faad14' },
+          },
+          data,
+        },
+      ],
+    },
+    true,
+  )
+}
+
 export default function DashboardPage() {
   const { data, loading } = useRequest(getMetricsOverview)
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstanceRef = useRef<echarts.ECharts | null>(null)
+  const domesticChartRef = useRef<HTMLDivElement>(null)
+  const domesticChartInstanceRef = useRef<echarts.ECharts | null>(null)
+  const overseasChartRef = useRef<HTMLDivElement>(null)
+  const overseasChartInstanceRef = useRef<echarts.ECharts | null>(null)
+  const chinaMapRef = useRef<HTMLDivElement>(null)
+  const chinaMapInstanceRef = useRef<echarts.ECharts | null>(null)
 
   // 用户注册趋势折线图（后端已返回 30 天 daily rows）
   useEffect(() => {
@@ -126,9 +302,55 @@ export default function DashboardPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [data?.user?.registrationTrend])
 
-  useEffect(() => () => chartInstanceRef.current?.dispose(), [])
+  // 用户地域分布（国内按省 / 海外按国家）
+  useEffect(() => {
+    const distribution = data?.user?.regionDistribution
+    if (!distribution) return
+
+    renderRegionChart(
+      domesticChartInstanceRef,
+      domesticChartRef.current,
+      distribution.domestic,
+      '#1677ff',
+      5,
+    )
+    renderRegionChart(
+      overseasChartInstanceRef,
+      overseasChartRef.current,
+      distribution.overseas,
+      '#722ed1',
+      5,
+    )
+    if (chinaMapRef.current && distribution.domestic.length > 0) {
+      void renderChinaMap(
+        chinaMapInstanceRef,
+        chinaMapRef.current,
+        distribution.domestic,
+      )
+    }
+
+    const handleResize = () => {
+      domesticChartInstanceRef.current?.resize()
+      overseasChartInstanceRef.current?.resize()
+      chinaMapInstanceRef.current?.resize()
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [data?.user?.regionDistribution])
+
+  useEffect(
+    () => () => {
+      chartInstanceRef.current?.dispose()
+      domesticChartInstanceRef.current?.dispose()
+      overseasChartInstanceRef.current?.dispose()
+      chinaMapInstanceRef.current?.dispose()
+    },
+    [],
+  )
 
   const todayNewFeedback = data?.feedback.todayNewCount ?? 0
+  const domesticRegions = data?.user?.regionDistribution?.domestic ?? []
+  const overseasRegions = data?.user?.regionDistribution?.overseas ?? []
 
   return (
     <PageContainer title={false}>
@@ -196,7 +418,7 @@ export default function DashboardPage() {
         <Col xs={12} sm={8} md={6}>
           <Card loading={loading} className={styles.statCard}>
             <Statistic
-              title="今日新增"
+              title="今日新增用户"
               value={data?.user.todayNew ?? 0}
               valueStyle={{ color: '#1677ff' }}
             />
@@ -205,7 +427,7 @@ export default function DashboardPage() {
         <Col xs={12} sm={8} md={6}>
           <Card loading={loading} className={styles.statCard}>
             <Statistic
-              title="昨日新增"
+              title="昨日新增用户"
               value={data?.user.yesterdayNew ?? 0}
             />
           </Card>
@@ -213,7 +435,7 @@ export default function DashboardPage() {
         <Col xs={12} sm={8} md={6}>
           <Card loading={loading} className={styles.statCard}>
             <Statistic
-              title="近 7 日新增"
+              title="近 7 日新增用户"
               value={data?.user.last7DaysNew ?? 0}
               valueStyle={{ color: '#722ed1' }}
             />
@@ -222,7 +444,7 @@ export default function DashboardPage() {
         <Col xs={12} sm={8} md={6}>
           <Card loading={loading} className={styles.statCard}>
             <Statistic
-              title="近 30 日新增"
+              title="近 30 日新增用户"
               value={data?.user.last30DaysNew ?? 0}
               valueStyle={{ color: '#fa8c16' }}
             />
@@ -255,7 +477,48 @@ export default function DashboardPage() {
         </Col>
       </Row>
 
-      {/* 第四行：最新反馈 + 最近发布 */}
+      {/* 第四行：用户地域分布（地图 + 榜单） */}
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={14}>
+          <Card title="国内用户地域分布地图" loading={loading}>
+            {domesticRegions.length > 0 ? (
+              <div ref={chinaMapRef} style={{ width: '100%', height: 380 }} />
+            ) : (
+              <div className={styles.empty}>暂无地域数据</div>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Row gutter={[0, 16]}>
+            <Col span={24}>
+              <Card title="国内用户地域分布（Top 5）" loading={loading}>
+                {domesticRegions.length > 0 ? (
+                  <div
+                    ref={domesticChartRef}
+                    style={{ width: '100%', height: 154 }}
+                  />
+                ) : (
+                  <div className={styles.empty}>暂无地域数据</div>
+                )}
+              </Card>
+            </Col>
+            <Col span={24}>
+              <Card title="海外用户地域分布（Top 5）" loading={loading}>
+                {overseasRegions.length > 0 ? (
+                  <div
+                    ref={overseasChartRef}
+                    style={{ width: '100%', height: 154 }}
+                  />
+                ) : (
+                  <div className={styles.empty}>暂无地域数据</div>
+                )}
+              </Card>
+            </Col>
+          </Row>
+        </Col>
+      </Row>
+
+      {/* 第五行：最新反馈 + 最近发布 */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={14}>
           <Card

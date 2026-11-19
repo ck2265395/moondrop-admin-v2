@@ -88,6 +88,11 @@ export const getMetricsSystemInfo = (): Promise<GetSystemInfoRes> =>
 
 // ========== Dashboard Overview ==========
 
+export interface DashboardRegionItem {
+  name: string
+  value: number
+}
+
 export interface DashboardUserStats {
   total: number
   todayNew: number
@@ -95,6 +100,11 @@ export interface DashboardUserStats {
   last7DaysNew: number
   last30DaysNew: number
   registrationTrend: { date: string; count: number }[]
+  /** 地域分布：国内按省、海外按国家，Top 15 */
+  regionDistribution: {
+    domestic: DashboardRegionItem[]
+    overseas: DashboardRegionItem[]
+  }
 }
 
 export interface DashboardFeedbackBrief {
