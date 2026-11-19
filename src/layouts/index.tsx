@@ -39,6 +39,7 @@ import {
   TagOutlined,
   TeamOutlined,
   UsbOutlined,
+  UserDeleteOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { history, useIntl, useLocation, useModel, Outlet } from '@umijs/max';
@@ -99,6 +100,7 @@ const menuIconMap: Record<string, ReactNode> = {
   '/system-config': <ControlOutlined />,
   '/operation-log': <FileSearchOutlined />,
   '/login-log': <LoginOutlined />,
+  '/user-destroy-log': <UserDeleteOutlined />,
 };
 
 export default function BasicLayout() {
@@ -247,6 +249,7 @@ export default function BasicLayout() {
           { path: '/system-config', name: intl.formatMessage({ id: 'menu.systemConfig' }) },
           { path: '/operation-log', name: intl.formatMessage({ id: 'menu.operationLog' }) },
           { path: '/login-log', name: intl.formatMessage({ id: 'menu.loginLog' }) },
+          { path: '/user-destroy-log', name: intl.formatMessage({ id: 'menu.userDestroyLog' }) },
         ],
       },
     ],

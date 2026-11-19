@@ -43,6 +43,7 @@ export default {
   'menu.systemConfig': 'System Config',
   'menu.operationLog': 'Operation Logs',
   'menu.loginLog': 'Login Logs',
+  'menu.userDestroyLog': 'User Deletion Logs',
   'page.placeholder': 'This module is under construction. Stay tuned.',
   'menu.home': 'Home',
   'home.welcome': 'Welcome back',
