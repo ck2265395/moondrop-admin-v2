@@ -5,7 +5,7 @@ import { completeImgUrl } from '@/utils/utils'
 import { LockOutlined, SafetyOutlined, UserOutlined } from '@ant-design/icons'
 import { history, useModel } from '@umijs/max'
 import { useRequest } from 'ahooks'
-import { Button, Divider, Form, Input, message } from 'antd'
+import { Alert, Button, Form, Input, message, Tabs } from 'antd'
 import React, { useCallback, useEffect, useState } from 'react'
 
 // ===== 极简 SVG 图标 =====
@@ -227,9 +227,13 @@ const VinylDisc: React.FC<{ style?: React.CSSProperties; color?: string }> = ({
 // ===== 迁移适配 =====
 const DEFAULT_BRAND_TITLE = 'MOONDROP 运营支撑系统'
 const DEFAULT_SUBTITLE = '水月雨 · 听见理性的声音'
+const LOGIN_NOTICE = '为避免多人共用账号问题，请使用 Casdoor 登录方式进行授权登录'
+
+type LoginMethod = 'casdoor' | 'password'
 
 export default function LoginPage() {
   const [form] = Form.useForm<PostAdminLoginReq & { code?: string }>()
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>('casdoor')
   const { data: publicConfig } = useRequest(getPublicConfig, {
     onError: () => {},
   })
@@ -404,15 +408,15 @@ export default function LoginPage() {
           height: 56px;
           padding: 8px;
           margin: 0 auto;
-          border: 1px solid transparent;
+          border: 1px solid #e5e7eb;
           border-radius: 8px;
-          background: transparent;
+          background: #fafbfc;
           cursor: pointer;
           transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
         }
         .third-party-login-button:hover {
-          border-color: #e5e7eb;
-          background: #f7f8fa;
+          border-color: #c9ced6;
+          background: #f1f3f6;
           transform: translateY(-2px);
         }
         .third-party-login-button:focus-visible {
@@ -429,6 +433,92 @@ export default function LoginPage() {
           height: 40px;
           object-fit: contain;
         }
+        .login-notice.ant-alert {
+          position: absolute;
+          top: 0;
+          right: 0;
+          left: 0;
+          z-index: 3;
+          justify-content: center;
+          padding: 15px 24px;
+          border: none;
+          border-bottom: 1px solid #ffe7a3;
+          border-radius: 0;
+          background: #fff8e6;
+        }
+        .login-notice .ant-alert-content {
+          flex: 0 0 auto;
+          text-align: center;
+        }
+        .login-notice .ant-alert-message {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #8a6d3b;
+          letter-spacing: 0.4px;
+        }
+        .login-notice .ant-alert-icon {
+          margin-inline-end: 10px;
+          font-size: 16px;
+          color: #d48806;
+        }
+        .login-tabs .ant-tabs-nav {
+          margin-bottom: 26px;
+        }
+        .login-tabs .ant-tabs-nav::before {
+          border-bottom: 1px solid #eeeeee;
+        }
+        .login-tabs .ant-tabs-nav-list {
+          width: 100%;
+        }
+        .login-tabs .ant-tabs-tab {
+          flex: 1;
+          justify-content: center;
+          padding: 10px 0 !important;
+          font-size: 13px !important;
+          letter-spacing: 1px;
+        }
+        .login-tabs .ant-tabs-tab + .ant-tabs-tab {
+          margin-left: 0 !important;
+        }
+        .login-tabs .ant-tabs-tab-btn {
+          color: #9ca3af !important;
+        }
+        .login-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: #141414 !important;
+        }
+        .login-tabs .ant-tabs-ink-bar {
+          height: 2px !important;
+          background: #141414 !important;
+        }
+        .login-card .ant-tabs {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+        }
+        .login-card .ant-tabs-content-holder {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+        }
+        .login-card .ant-tabs-content {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+        }
+        .login-card .ant-tabs-tabpane-active {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+        }
+        .login-casdoor-pane {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 10px 0 4px;
+          text-align: center;
+        }
       `}</style>
 
       <div
@@ -438,6 +528,7 @@ export default function LoginPage() {
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           padding: '24px',
@@ -601,22 +692,32 @@ export default function LoginPage() {
           color="#cdd3dc"
         />
 
-        {/* ===== 登录卡片 ===== */}
+        {/* ===== 登录方式公告：整页横幅，不受登录框宽度限制 ===== */}
+        <Alert className="login-notice" type="warning" showIcon message={LOGIN_NOTICE} />
+
+        {/* ===== 登录区：登录方式 Tab + 登录卡片 ===== */}
         <div
-          className="login-card"
           style={{
             position: 'relative',
             zIndex: 2,
             width: '100%',
             maxWidth: '380px',
-            padding: '44px 40px 32px',
-            background: '#ffffff',
-            border: '1px solid #eeeeee',
-            boxShadow: '0 1px 0 rgba(20,20,20,0.02), 0 12px 32px rgba(20,20,20,0.04)',
             animation: 'loginFadeInUp 0.7s ease both',
-            boxSizing: 'border-box',
           }}
         >
+          <div
+            className="login-card"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: '478px',
+              padding: '44px 40px 32px',
+              background: '#ffffff',
+              border: '1px solid #eeeeee',
+              boxShadow: '0 1px 0 rgba(20,20,20,0.02), 0 12px 32px rgba(20,20,20,0.04)',
+              boxSizing: 'border-box',
+            }}
+          >
           {/* 顶部标题 */}
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -658,134 +759,151 @@ export default function LoginPage() {
             ) : null}
           </div>
 
-          {/* 表单 */}
-          <Form
-            form={form}
-            size="large"
-            onFinish={handleFinish}
-          >
-            <Form.Item
-              name="username"
-              rules={[{ required: true, message: '请输入用户名' }]}
-              style={{ marginBottom: '18px' }}
-            >
-              <Input
-                prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
-                placeholder="用户名"
-                style={{
-                  borderRadius: '0',
-                  height: '46px',
-                  border: '1px solid #e5e7eb',
-                  background: '#fff',
-                }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="password"
-              rules={[{ required: true, message: '请输入密码' }]}
-              style={{ marginBottom: '22px' }}
-            >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
-                placeholder="密码"
-                style={{
-                  borderRadius: '0',
-                  height: '46px',
-                  border: '1px solid #e5e7eb',
-                  background: '#fff',
-                }}
-              />
-            </Form.Item>
-            {captchaEnabled && (
-              <Form.Item style={{ marginBottom: '22px' }}>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
-                  <Form.Item
-                    name="code"
-                    noStyle
-                    rules={[{ required: true, message: '请输入验证码' }]}
-                  >
-                    <Input
-                      prefix={<SafetyOutlined style={{ color: '#bfbfbf' }} />}
-                      placeholder="验证码"
-                      maxLength={4}
-                      autoComplete="off"
+          {/* 登录方式切换（卡片内，默认 Casdoor 登录，引导统一认证） */}
+          <Tabs
+            className="login-tabs"
+            activeKey={loginMethod}
+            onChange={(key) => setLoginMethod(key as LoginMethod)}
+            items={[
+              {
+                key: 'casdoor',
+                label: 'Casdoor 登录',
+                children: (
+                  <div className="login-casdoor-pane">
+                    <button
+                      type="button"
+                      className="third-party-login-button"
+                      onClick={redirectToCasdoor}
+                      title="水月雨统一认证登录"
+                      aria-label="水月雨统一认证登录"
+                    >
+                      <img
+                        src={history.createHref({ pathname: '/brand/moondrop_logo.png' })}
+                        alt="水月雨"
+                      />
+                    </button>
+                    <div
                       style={{
-                        flex: 1,
-                        borderRadius: '0',
-                        height: '46px',
-                        border: '1px solid #e5e7eb',
-                        background: '#fff',
+                        marginTop: '12px',
+                        fontSize: '12px',
+                        color: '#9ca3af',
+                        letterSpacing: '1px',
                       }}
-                    />
-                  </Form.Item>
-                  <img
-                    src={
-                      captcha.svg
-                        ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(captcha.svg)}`
-                        : undefined
-                    }
-                    alt="验证码"
-                    title="点击刷新"
-                    onClick={refreshCaptcha}
-                    style={{
-                      flex: '0 0 132px',
-                      width: '132px',
-                      height: '46px',
-                      border: '1px solid #e5e7eb',
-                      background: '#f3f4f6',
-                      cursor: captchaLoading ? 'progress' : 'pointer',
-                      objectFit: 'cover',
-                    }}
-                  />
-                </div>
-              </Form.Item>
-            )}
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Button
-                type="primary"
-                size="large"
-                htmlType="submit"
-                block
-                loading={postAdminLoginLoading}
-                style={{
-                  height: '46px',
-                  fontSize: '14px',
-                  letterSpacing: '6px',
-                  borderRadius: '0',
-                  border: 'none',
-                  marginTop: '10px',
-                  background: '#141414',
-                }}
-              >
-                登 录
-              </Button>
-            </Form.Item>
-          </Form>
-
-          {/* 第三方登录入口 */}
-          <Divider
-            plain
-            style={{
-              margin: '34px 0 16px',
-              color: '#9ca3af',
-              fontSize: '12px',
-              letterSpacing: '2px',
-            }}
-          >
-            第三方登录方式
-          </Divider>
-          <button
-            type="button"
-            className="third-party-login-button"
-            onClick={redirectToCasdoor}
-            title="水月雨统一认证登录"
-            aria-label="水月雨统一认证登录"
-          >
-            <img
-              src={history.createHref({ pathname: '/brand/moondrop_logo.png' })}
-              alt="水月雨"
-            />
-          </button>
+                    >
+                      点击图标跳转统一认证中心完成授权
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: 'password',
+                label: '账号密码登录',
+                children: (
+                  <Form form={form} size="large" onFinish={handleFinish}>
+                    <Form.Item
+                      name="username"
+                      rules={[{ required: true, message: '请输入用户名' }]}
+                      style={{ marginBottom: '18px' }}
+                    >
+                      <Input
+                        prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+                        placeholder="用户名"
+                        style={{
+                          borderRadius: '0',
+                          height: '46px',
+                          border: '1px solid #e5e7eb',
+                          background: '#fff',
+                        }}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      name="password"
+                      rules={[{ required: true, message: '请输入密码' }]}
+                      style={{ marginBottom: '22px' }}
+                    >
+                      <Input.Password
+                        prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+                        placeholder="密码"
+                        style={{
+                          borderRadius: '0',
+                          height: '46px',
+                          border: '1px solid #e5e7eb',
+                          background: '#fff',
+                        }}
+                      />
+                    </Form.Item>
+                    {captchaEnabled && (
+                      <Form.Item style={{ marginBottom: '22px' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                          <Form.Item
+                            name="code"
+                            noStyle
+                            rules={[{ required: true, message: '请输入验证码' }]}
+                          >
+                            <Input
+                              prefix={<SafetyOutlined style={{ color: '#bfbfbf' }} />}
+                              placeholder="验证码"
+                              maxLength={4}
+                              autoComplete="off"
+                              style={{
+                                flex: 1,
+                                borderRadius: '0',
+                                height: '46px',
+                                border: '1px solid #e5e7eb',
+                                background: '#fff',
+                              }}
+                            />
+                          </Form.Item>
+                          <img
+                            src={
+                              captcha.svg
+                                ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+                                    captcha.svg,
+                                  )}`
+                                : undefined
+                            }
+                            alt="验证码"
+                            title="点击刷新"
+                            onClick={refreshCaptcha}
+                            style={{
+                              flex: '0 0 132px',
+                              width: '132px',
+                              height: '46px',
+                              border: '1px solid #e5e7eb',
+                              background: '#f3f4f6',
+                              cursor: captchaLoading ? 'progress' : 'pointer',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        </div>
+                      </Form.Item>
+                    )}
+                    <Form.Item style={{ marginBottom: 0 }}>
+                      <Button
+                        type="primary"
+                        size="large"
+                        htmlType="submit"
+                        block
+                        loading={postAdminLoginLoading}
+                        style={{
+                          height: '46px',
+                          fontSize: '14px',
+                          letterSpacing: '6px',
+                          borderRadius: '0',
+                          border: 'none',
+                          marginTop: '10px',
+                          background: '#141414',
+                        }}
+                      >
+                        登 录
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                ),
+              },
+            ]}
+          />
+          </div>
         </div>
       </div>
     </>

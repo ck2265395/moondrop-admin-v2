@@ -81,6 +81,13 @@ export default () => {
       <ProTable<GetAdminRes>
         actionRef={actionRef}
         rowKey="uuid"
+        columnsState={{
+          defaultValue: {
+            casdoorUsername: { show: false },
+            casdoorRoles: { show: false },
+            latestLoginTime: { show: false },
+          },
+        }}
         pagination={{
           showSizeChanger: true,
           showTotal: (total: number, [start, end]: [number, number]) =>

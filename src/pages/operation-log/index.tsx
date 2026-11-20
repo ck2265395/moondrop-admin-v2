@@ -1,10 +1,12 @@
 import type { GetOperationLogReq, GetOperationLogRes } from '@/services/modules/operation-log';
 import { getOperationLogAdmins, getOperationLogModules, getOperationLogs } from '@/services/modules/operation-log';
+import { getIconAll } from '@/services/modules/icon';
+import { renderFileIcon } from '@/utils/table';
 import { completeImgUrl } from '@/utils/utils';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useRequest } from 'ahooks';
 import { Tag, Typography } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const IMAGE_URL_PATTERN =
   /((?:https?:\/\/|\/\/)[^\s]+\.(?:png|jpe?g|gif|webp|svg)(?:\?[^\s]*)?|(?:[\w-]+\/)+[\w.-]+\.(?:png|jpe?g|gif|webp|svg)(?:\?[^\s]*)?)/gi;
@@ -12,9 +14,9 @@ const IMAGE_URL_PATTERN =
 /** 完整 http(s) URL */
 const HTTP_URL_PATTERN = /(https?:\/\/[^\s)]+)/gi;
 
-/** CDN 上的文档路径（带扩展名），可带或不带前导斜杠 */
+/** CDN 上的文档/媒体路径（带扩展名），可带或不带前导斜杠 */
 const CDN_PATH_PATTERN =
-  /((?:\/)?(?:[\w-]+\/)*[\w.-]+\.(?:html?|pdf|json|txt|xml|md|doc(?:x)?|xls(?:x)?|ppt(?:x)?|csv))/gi;
+  /((?:\/)?(?:[\w-]+\/)*[\w.-]+\.(?:html?|pdf|json|txt|xml|md|doc(?:x)?|xls(?:x)?|ppt(?:x)?|csv|mp3|wav|flac|m4a|aac|ogg))/gi;
 
 /** 把路径补成完整可点击 URL，已是 http(s) 则原样返回 */
 const toClickableUrl = (src: string): string => {
@@ -24,14 +26,25 @@ const toClickableUrl = (src: string): string => {
   return completeImgUrl(trimmed);
 };
 
-const renderLinkedText = (text: string) => {
+type IconFileMap = Map<string, string>;
+
+const UUID_PATTERN =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+/** 历史日志的图标字段记录的是图标 UUID，这里按图标表映射回文件路径以便走通用图片渲染 */
+const resolveIconUuids = (text: string, iconFileMap?: IconFileMap): string => {
+  if (!iconFileMap?.size || !text) return text;
+  return text.replace(UUID_PATTERN, (uuid) => iconFileMap.get(uuid.toLowerCase()) ?? uuid);
+};
+
+const renderLinkedText = (text: string, iconFileMap?: IconFileMap) => {
   const content: React.ReactNode[] = [];
   let key = 0;
 
   const segments: { type: 'text' | 'image' | 'url' | 'cdn'; value: string }[] = [];
 
   // 1. 图片
-  let remaining = text;
+  let remaining = resolveIconUuids(text, iconFileMap);
   let lastEnd = 0;
   let m: RegExpExecArray | null;
   IMAGE_URL_PATTERN.lastIndex = 0;
@@ -92,7 +105,30 @@ const renderLinkedText = (text: string) => {
       );
       continue;
     }
+    // http URL 渲染成文字链接，CDN 文档路径渲染成 文件图标 + 链接（hover 显示完整 URL）
     const url = toClickableUrl(seg.value);
+    if (seg.type === 'cdn') {
+      content.push(
+        <a
+          key={`file-${key++}`}
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            margin: '0 4px',
+            verticalAlign: 'middle',
+          }}
+          title={url}
+        >
+          {renderFileIcon(seg.value, 18)}
+          <span style={{ color: '#1890ff', wordBreak: 'break-all' }}>{seg.value}</span>
+        </a>,
+      );
+      continue;
+    }
     content.push(
       <a
         key={`link-${key++}`}
@@ -204,16 +240,17 @@ const renderDiffParts = (parts: DiffPart[], changedStyle: React.CSSProperties) =
   );
 
 /** 「旧值 → 新值」对比渲染：差异部分标红（旧值加删除线），其余值原样渲染 */
-const renderDiffValue = (value: string, label?: string) => {
+const renderDiffValue = (value: string, label?: string, iconFileMap?: IconFileMap) => {
+  const resolvedText = resolveIconUuids(value, iconFileMap);
   if (label && !DIFF_LABELS.has(label)) {
-    return renderLinkedText(value);
+    return renderLinkedText(resolvedText, iconFileMap);
   }
-  const arrowIndex = value.indexOf(DIFF_ARROW);
-  if (arrowIndex <= 0 || arrowIndex + DIFF_ARROW.length >= value.length) {
-    return renderLinkedText(value);
+  const arrowIndex = resolvedText.indexOf(DIFF_ARROW);
+  if (arrowIndex <= 0 || arrowIndex + DIFF_ARROW.length >= resolvedText.length) {
+    return renderLinkedText(resolvedText, iconFileMap);
   }
-  const oldText = value.slice(0, arrowIndex);
-  const newText = value.slice(arrowIndex + DIFF_ARROW.length);
+  const oldText = resolvedText.slice(0, arrowIndex);
+  const newText = resolvedText.slice(arrowIndex + DIFF_ARROW.length);
   // 任一侧为空不比较；链接/图片保持可点击渲染；超长文本跳过 diff 避免 O(n²) 开销
   if (
     isDiffEmpty(oldText) ||
@@ -223,7 +260,7 @@ const renderDiffValue = (value: string, label?: string) => {
     oldText.length > 600 ||
     newText.length > 600
   ) {
-    return renderLinkedText(value);
+    return renderLinkedText(resolvedText, iconFileMap);
   }
 
   // 列表类值（逗号/顿号分隔）按集合对比：项在另一侧不存在即标记增删，与顺序无关
@@ -407,7 +444,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 /** 标签：值 行 */
-const renderFieldRow = (field: SummaryField, key?: string) => {
+const renderFieldRow = (field: SummaryField, key?: string, iconFileMap?: IconFileMap) => {
   const isSubField = field.label === '原值' || field.label === '新值';
   return (
     <div key={key} style={{ ...fieldRowStyle, paddingLeft: isSubField ? 20 : 0 }}>
@@ -417,18 +454,18 @@ const renderFieldRow = (field: SummaryField, key?: string) => {
         </span>
       ) : null}
       <span style={{ flex: 1, minWidth: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-        {renderDiffValue(field.value, field.label)}
+        {renderDiffValue(field.value, field.label, iconFileMap)}
       </span>
     </div>
   );
 };
 
-const renderStructuredSummary = (data: StructuredSummary) => (
+const renderStructuredSummary = (data: StructuredSummary, iconFileMap?: IconFileMap) => (
   <div>
     {data.title ? (
       <div style={{ fontWeight: 600, marginBottom: 6, overflowWrap: 'anywhere' }}>{data.title}</div>
     ) : null}
-    {data.fields.map((field, index) => renderFieldRow(field, `field-${index}`))}
+    {data.fields.map((field, index) => renderFieldRow(field, `field-${index}`, iconFileMap))}
     {data.groups.map((group) => (
       <div
         key={group.label}
@@ -452,7 +489,7 @@ const renderStructuredSummary = (data: StructuredSummary) => (
           >
             {item.label ? <div style={{ fontWeight: 500, marginBottom: 2 }}>{item.label}</div> : null}
             {item.details.map((detail, detailIndex) =>
-              renderFieldRow(detail, `detail-${detailIndex}`),
+              renderFieldRow(detail, `detail-${detailIndex}`, iconFileMap),
             )}
           </div>
         ))}
@@ -461,7 +498,7 @@ const renderStructuredSummary = (data: StructuredSummary) => (
   </div>
 );
 
-const renderSummary = (summary: string) => {
+const renderSummary = (summary: string, iconFileMap?: IconFileMap) => {
   const json = renderJson(summary);
   if (json) return json;
 
@@ -469,14 +506,14 @@ const renderSummary = (summary: string) => {
   if (!parsed.title && !parsed.fields.length && !parsed.groups.length) {
     return (
       <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-        {renderLinkedText(summary)}
+        {renderLinkedText(summary, iconFileMap)}
       </div>
     );
   }
-  return renderStructuredSummary(parsed);
+  return renderStructuredSummary(parsed, iconFileMap);
 };
 
-const SummaryCell = ({ summary }: { summary: string }) => {
+const SummaryCell = ({ summary, iconFileMap }: { summary: string; iconFileMap?: IconFileMap }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [canExpand, setCanExpand] = useState(false);
@@ -498,7 +535,7 @@ const SummaryCell = ({ summary }: { summary: string }) => {
             overflow: expanded ? undefined : 'hidden',
           }}
         >
-          {renderSummary(summary)}
+          {renderSummary(summary, iconFileMap)}
         </div>
         {!expanded && canExpand && (
           <div
@@ -552,7 +589,15 @@ const MODULE_ENUM: Record<string, string> = {
   'peq-config': '配置文件',
   'peq-config-tag': '配置标签',
   'microphone-adjust': '麦克风校准',
+  'ref-response': '原始频响',
+  'freq-response': '频响曲线',
+  'response-lib': '频响库',
+  'response-lib-tags': '频响库标签',
+  'white-noise-audio': '白噪音音频',
   'system-config': '系统配置',
+  'virtual-sound-card-channel': '虚拟声卡通道',
+  'virtual-sound-card-eq-config': '虚拟声卡静态EQ配置',
+  'virtual-sound-card-drc-preset': '虚拟声卡动态DRC预设',
 };
 
 const moduleText = (module: string): string => MODULE_ENUM[module] || module;
@@ -568,6 +613,12 @@ const ACTION_COLOR: Record<string, string> = {
 export default () => {
   const { data: modules } = useRequest(getOperationLogModules);
   const { data: admins } = useRequest(getOperationLogAdmins);
+  // 图标 UUID → 文件路径，用于历史日志里只记录了 uuid 的图标字段
+  const { data: icons } = useRequest(getIconAll);
+  const iconFileMap = useMemo(
+    () => new Map((icons ?? []).map((item) => [item.uuid.toLowerCase(), item.file])),
+    [icons],
+  );
 
   return (
     <PageContainer title="操作日志">
@@ -641,7 +692,9 @@ export default () => {
             width: 560,
             order: 100,
             onCell: () => ({ style: { verticalAlign: 'top' } }),
-            render: (_, record) => <SummaryCell summary={record.summary} />,
+            render: (_, record) => (
+              <SummaryCell summary={record.summary} iconFileMap={iconFileMap} />
+            ),
           },
           {
             align: 'center',
