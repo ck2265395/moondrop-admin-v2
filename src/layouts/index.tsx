@@ -58,6 +58,18 @@ interface MenuDataItem {
 const hasMenuPath = (item: MenuDataItem, pathname: string): boolean =>
   item.path === pathname || (item.routes ?? []).some((child) => hasMenuPath(child, pathname));
 
+/** 仅超管（命中 CASDOOR_ADMIN_ROLES）可访问的页面 */
+const SUPER_ADMIN_PATHS = ['/admin', '/system-info', '/system-config'];
+
+const filterSuperAdminRoutes = (items: MenuDataItem[], isSuperAdmin: boolean): MenuDataItem[] =>
+  items
+    .filter((item) => isSuperAdmin || !SUPER_ADMIN_PATHS.includes(item.path ?? ''))
+    .map((item) =>
+      item.routes?.length
+        ? { ...item, routes: filterSuperAdminRoutes(item.routes, isSuperAdmin) }
+        : item,
+    );
+
 // 域节点不对应页面，取其下第一个叶子页面作为落地路径
 const findFirstLeaf = (item: MenuDataItem): string =>
   item.routes?.length ? findFirstLeaf(item.routes[0]) : item.path;
@@ -148,6 +160,21 @@ export default function BasicLayout() {
       history.replace('/login');
     }
   }, [initialState?.isLoggedIn, location.pathname]);
+
+  const isSuperAdmin = Boolean(initialState?.isSuperAdmin);
+
+  // 权限守卫：非超管访问受限页面时回到工作台
+  useEffect(() => {
+    if (
+      initialState?.isLoggedIn &&
+      !isSuperAdmin &&
+      SUPER_ADMIN_PATHS.some(
+        (path) => location.pathname === path || location.pathname.startsWith(`${path}/`),
+      )
+    ) {
+      history.replace('/dashboard');
+    }
+  }, [initialState?.isLoggedIn, isSuperAdmin, location.pathname]);
 
   // 响应式：md 以下侧边栏收进顶栏汉堡按钮，以抽屉弹出
   const screens = Grid.useBreakpoint();
@@ -255,6 +282,12 @@ export default function BasicLayout() {
     ],
   };
 
+  // 按权限过滤后的菜单树（受限页面仅超管可见）
+  const menuRoutes = filterSuperAdminRoutes(
+    (route.routes ?? []) as MenuDataItem[],
+    isSuperAdmin,
+  );
+
   // 根据当前 pathname 在菜单树里找完整祖先路径（不含根节点）
   const findBreadcrumbPath = (
     items: MenuDataItem[],
@@ -272,10 +305,10 @@ export default function BasicLayout() {
     return null;
   };
 
-  const breadcrumbItems = findBreadcrumbPath(route.routes, location.pathname);
+  const breadcrumbItems = findBreadcrumbPath(menuRoutes, location.pathname);
 
   // 当前所在的一级域（按菜单树祖先关系匹配，不依赖路径前缀）
-  const activeTopItem = (route.routes as MenuDataItem[] | undefined)?.find((item) =>
+  const activeTopItem = menuRoutes.find((item) =>
     hasMenuPath(item, location.pathname),
   );
 
@@ -384,13 +417,13 @@ export default function BasicLayout() {
           mode="horizontal"
           theme="dark"
           selectedKeys={activeTopItem ? [activeTopItem.path] : []}
-          items={(route.routes ?? []).map((item) => ({
+          items={menuRoutes.map((item) => ({
             key: item.path,
             label: item.name,
             icon: item.icon,
           }))}
           onClick={({ key }) => {
-            const target = (route.routes ?? []).find((item) => item.path === key);
+            const target = menuRoutes.find((item) => item.path === key);
             if (target) {
               history.push(findFirstLeaf(target));
             }

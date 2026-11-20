@@ -5,6 +5,7 @@ export async function getInitialState(): Promise<{
   isLoggedIn: boolean;
   name: string;
   avatar?: string;
+  isSuperAdmin?: boolean;
 }> {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -12,7 +13,12 @@ export async function getInitialState(): Promise<{
   }
   try {
     const mine = await getAdminMine();
-    return { isLoggedIn: true, name: mine.name || mine.username, avatar: mine.casdoorAvatar ?? undefined };
+    return {
+      isLoggedIn: true,
+      name: mine.name || mine.username,
+      avatar: mine.casdoorAvatar ?? undefined,
+      isSuperAdmin: Boolean(mine.isSuperAdmin),
+    };
   } catch {
     // token 失效：request 拦截器已提示，这里兜底清理
     localStorage.removeItem('token');

@@ -598,6 +598,7 @@ const MODULE_ENUM: Record<string, string> = {
   'virtual-sound-card-channel': '虚拟声卡通道',
   'virtual-sound-card-eq-config': '虚拟声卡静态EQ配置',
   'virtual-sound-card-drc-preset': '虚拟声卡动态DRC预设',
+  'qa-category': '通用QA',
 };
 
 const moduleText = (module: string): string => MODULE_ENUM[module] || module;

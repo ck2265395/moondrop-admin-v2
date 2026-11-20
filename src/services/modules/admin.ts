@@ -76,6 +76,8 @@ export interface GetAdminMineRes {
   casdoorEmail: string | null;
   casdoorAvatar: string | null;
   casdoorRoles: string | null;
+  /** 是否命中 CASDOOR_ADMIN_ROLES 后台角色（超管） */
+  isSuperAdmin?: boolean;
   createTime: string;
   updateTime: string;
 }
